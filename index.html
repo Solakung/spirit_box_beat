@@ -147,7 +147,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:3px 4px;t
 </div>
 
 <script>
-const GAME_VERSION='5.0.0'; // ← เปลี่ยนเลขนี้ทุกครั้งที่อัปโหลดไฟล์ใหม่ขึ้น GitHub
+const GAME_VERSION='5.0.1'; // ← เปลี่ยนเลขนี้ทุกครั้งที่อัปโหลดไฟล์ใหม่ขึ้น GitHub
 /* ================= HELPERS ================= */
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -631,7 +631,7 @@ async function loadFile(f){
  }
 }
 function songFlow(song){
- ytKill();newRun('file');R.song=song;R.lv=song.lv;
+ ytKill();newRun('file');R.song=song;R.lv=song.lv;R.state='setup';
  prePicks(2,()=>{closeOv();startFileSong()});
 }
 function startFileSong(){
@@ -655,7 +655,7 @@ function askYT(){
  $('ytGo').onclick=()=>{const id=ytParse($('ytIn').value);if(!id){$('ytErr').textContent='ลิงก์ไม่ถูกต้อง';return}chooseDiff('▶️ YouTube',lv=>ytFlow(id,lv))};
 }
 function ytFlow(id,lv){
- newRun('yt');R.lv=lv;R.ytId=id;
+ newRun('yt');R.lv=lv;R.ytId=id;R.state='setup';
  prePicks(2,async()=>{
   showOv(`<h2>กำลังโหลด YouTube...</h2><div class="spin"></div>`);
   try{await loadYTApi();enterRun();await ytMake(id)}
@@ -712,8 +712,20 @@ function startYTSong(c){
  R.notes=makeHolds(addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base),.08+.12*D.base);
  R.bossFrom=R.dur*.75;R.bossMax=Math.max(10,Math.round(R.notes.filter(n=>n.t>=R.bossFrom&&n.type!=='bomb').length*.85));
  R.shields=R.shieldPer;R.lastShieldT=0;
- ytEnded=false;try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}
- R.state='play';bigPop('▶️ เริ่ม!','#35e6ff');
+ // wait until the player has really jumped back to the start before the clock is trusted
+ ytEnded=false;ytBase={vt:0,pt:performance.now(),playing:false};
+ R.state='ytwait';R.waitT=performance.now();R.lastSeek=performance.now();
+ try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}
+}
+function ytWaitTick(){
+ if(!ytP||!ytP.getPlayerState)return;
+ const st=ytP.getPlayerState(),t=ytP.getCurrentTime()||0,nowMs=performance.now();
+ if(st===1&&t<2.5){
+  ytBase={vt:t,pt:nowMs,playing:true};R.state='play';
+  $('ytBox').style.pointerEvents='none';$('ytBox').style.opacity='.38';bigPop('▶️ เริ่ม!','#35e6ff');
+ }else if(t>=2.5&&nowMs-R.lastSeek>800){R.lastSeek=nowMs;try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}}
+ else if(st!==1&&st!==3&&nowMs-R.lastSeek>1500){R.lastSeek=nowMs;try{ytP.playVideo()}catch(e){}}
+ if(nowMs-R.waitT>3500){$('ytBox').style.pointerEvents='auto';$('ytBox').style.opacity='.9'}
 }
 
 /* ================= SCHEDULER (gen mode music) ================= */
@@ -1186,6 +1198,7 @@ function drawScope(ts,dt){
  for(let i=particles.length-1;i>=0;i--){const q=particles[i];q.l-=dt*1.8;if(q.l<=0){particles.splice(i,1);continue}q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=150*dt;c.fillStyle=`rgba(${q.c},${q.l})`;c.fillRect(q.x,q.y,q.z,q.z)}
  for(let i=pops.length-1;i>=0;i--){const q=pops[i];q.l-=dt*(q.big?.9:1.5);if(q.l<=0){pops.splice(i,1);continue}if(!q.big)q.y-=34*dt;c.globalAlpha=clamp(q.l,0,1);c.fillStyle=q.c;c.font=`700 ${q.s}px Kanit,sans-serif`;c.fillText(q.t,q.x,q.y)}
  c.globalAlpha=1;
+ if(R.state==='ytwait'){c.fillStyle='rgba(3,6,11,.35)';c.fillRect(0,0,w,h);c.fillStyle='#e6edf7';c.font='600 15px Kanit,sans-serif';c.fillText('⏳ กำลังเริ่มเพลงจากต้น...',w/2,h*.12);if(performance.now()-R.waitT>3500){c.fillStyle='#ffd04a';c.fillText('ถ้าวิดีโอไม่เล่น แตะที่วิดีโอ 1 ครั้ง',w/2,h*.12+24)}}
  if(R.state==='tempo'){c.fillStyle='rgba(3,6,11,.4)';c.fillRect(0,0,w,h);c.fillStyle='#e6edf7';c.font='600 15px Kanit,sans-serif';c.fillText('▶️ ฟังเพลงแล้วแตะตามจังหวะ',w/2,h*.12)}
 }
 let hudT=0;
@@ -1208,12 +1221,14 @@ function frame(ts){
  const dt=Math.min(.05,(ts-last)/1000);last=ts;
  if($('home').classList.contains('on'))drawRoom(ts);
  if($('run').classList.contains('on')&&R){
+  if(R.state==='ytwait')ytWaitTick();
   if(R.state==='play'&&!paused&&(AC||R.mode==='yt')){
    schedTick();
    const now=clk(),w2=W2();
    for(const n of R.notes){
     if(n.j)continue;if(now-n.t<=w2)break;
     if(n.type==='bomb'){n.j=4}
+    else if(R.mode==='yt'&&now-n.t>1.2){n.j=4} // video jumped/buffered: skip silently, no damage
     else{n.j=5;R.miss++;if(n.type==='ghost')pop('วิญญาณหลุดไป...',Ws/2,Hs*.45,'#7d8ca3',14);hurt(missDmg(),false);if(R.state!=='play')break}
    }
    if(R.state==='play')for(const l in R.holds){const n=R.holds[l];if(n&&now>=n.end)holdDone(n,true)}
@@ -1225,7 +1240,7 @@ function frame(ts){
      if(R.shieldPer&&now-R.lastShieldT>30){R.lastShieldT=now;R.shields=Math.max(R.shields,R.shieldPer)}
      if(!R.bossDone&&!R.boss&&now>=R.bossFrom){R.boss=true;R.bossHP=R.bossMax;bigPop(`${BANDS[S.band].boss.e} ท่อนสุดท้าย: ${BANDS[S.band].boss.n}`,'#ff4d73')}
      if(R.boss&&R.bossHP<=0){R.boss=false;R.bossDone=true;const bo=bossReward();bigPop(`🏆 ปราบได้! +${fmt(bo)} Hz`,'#ffd04a')}
-     const ended=R.mode==='yt'?(ytEnded||now>R.dur-.3):now>R.T0+R.dur+.3;
+     const ended=R.dur>5&&(R.mode==='yt'?(ytEnded||now>R.dur-.3):now>R.T0+R.dur+.3);
      if(ended&&R.notes.every(n=>n.j||n.t>now+5))songEnd();
     }
    }
