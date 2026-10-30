@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Spirit Box: 99.9 FM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05070d;--panel:#0b111c;--panel2:#0f1827;--line:#1b2a40;--cyan:#35e6ff;--green:#3dffa0;--gold:#ffd04a;--red:#ff4d73;--violet:#b48cff;--orange:#ff9d3d;--txt:#e6edf7;--dim:#7d8ca3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+input{user-select:text;-webkit-user-select:text}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:'Kanit',system-ui,sans-serif;overscroll-behavior:none;overflow:hidden;touch-action:manipulation}
+.mono{font-family:'JetBrains Mono',monospace}
+#app{max-width:480px;margin:0 auto;height:100%;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% -10%,#0d1c33 0%,#05070d 65%)}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:12px 14px calc(14px + env(safe-area-inset-bottom));gap:9px}
+.screen.on{display:flex}
+.top{display:flex;justify-content:space-between;align-items:flex-end}
+.logo{font-weight:700;color:var(--cyan);letter-spacing:.05em;font-size:16px}
+.sub{font-size:11px;color:var(--dim)}
+.hz{text-align:right}.hz b{font-size:24px;color:var(--cyan);font-weight:800}.hz span{font-size:11px;color:var(--dim);margin-left:4px}
+#roomWrap{flex:1;min-height:200px;position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+#room{display:block;width:100%;height:100%}
+#roomCap{position:absolute;left:10px;right:10px;bottom:8px;font-size:11px;color:var(--dim);text-align:center;background:rgba(4,8,14,.7);border-radius:10px;padding:4px 8px}
+#bandRow{display:flex;gap:6px}
+.chip{flex:1;padding:7px 4px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--dim);font-family:inherit;font-size:11px;cursor:pointer;line-height:1.3}
+.chip b{display:block;font-size:13px;font-weight:600}
+.chip.on{border-color:var(--cyan);color:var(--cyan);background:#0a2030}
+.chip.lock{opacity:.6}
+#bestRow{font-size:11px;color:var(--dim);text-align:center}
+.big{width:100%;border:0;border-radius:20px;padding:15px 10px;font-family:inherit;cursor:pointer;background:linear-gradient(135deg,#27d9ff,#35ffa4);color:#021018;font-weight:700;font-size:21px;box-shadow:0 0 26px rgba(53,230,255,.35),inset 0 -4px 0 rgba(0,0,0,.18)}
+.big:active{transform:scale(.98)}
+.big:disabled{opacity:.4}
+.big small{display:block;font-weight:400;font-size:12px;opacity:.8}
+.navRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.nav{position:relative;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-family:inherit;font-size:13px;cursor:pointer}
+.dot{position:absolute;top:5px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red);display:none}
+#foot{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
+.runTop{display:flex;gap:10px;align-items:center}
+.hpWrap{flex:1;display:flex;align-items:center;gap:8px}
+.hpbar{flex:1;height:12px;border-radius:8px;background:#1a0a10;overflow:hidden;border:1px solid #3a1420}
+.hpbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff4d73,#ff8a9e);transition:width .12s}
+#hpTxt{font-size:12px;color:#ff8a9e;min-width:58px;text-align:right}
+.mini{border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:10px;padding:6px 10px;font-size:14px;cursor:pointer}
+.runInfo{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);gap:8px}
+.runInfo span:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.runInfo b{color:var(--cyan)}
+.pbar{height:5px;border-radius:5px;background:#0a1220;overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--cyan)}
+.pbar.boss i{background:linear-gradient(90deg,#ff4d73,#b48cff)}
+#scopeWrap{flex:1;min-height:260px;position:relative;border-radius:20px;overflow:hidden;border:1px solid #1d4457;background:#03060b;transition:box-shadow .3s,border-color .3s}
+#ytBox{position:absolute;inset:0;z-index:0;opacity:.38;pointer-events:none;display:none}
+#ytBox iframe,#ytBox>div{width:100%;height:100%;border:0}
+#scope{position:relative;z-index:1;display:block;width:100%;height:100%;pointer-events:none}
+#comboBig{text-align:center;line-height:1}
+#cNum{font-size:40px;font-weight:800;display:inline-block;transition:transform .08s}
+#cLbl{display:block;font-size:11px;letter-spacing:.3em;color:var(--dim);margin-top:2px}
+#cMul{display:block;font-size:12px;color:var(--gold);margin-top:2px;min-height:15px}
+#held{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;min-height:24px}
+.hc{font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:2px 7px}
+#tapHint{text-align:center;font-size:11px;color:var(--dim);min-height:15px}
+#tempoUI{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;background:rgba(8,14,24,.97);border:1px solid var(--cyan);border-radius:18px;padding:12px;display:none}
+#tempoUI p{margin:0 0 8px;font-size:12px;color:#c9d4e4;line-height:1.5}
+#tapTempo{font-size:19px;padding:20px}
+#ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(3,6,12,.9);padding:14px;backdrop-filter:blur(3px)}
+#ov.on{display:flex}
+.box{width:100%;max-width:452px;max-height:94%;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;animation:rise .3s cubic-bezier(.2,1.2,.4,1)}
+@keyframes rise{from{transform:translateY(16px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.box h2{margin:0 0 4px;font-size:21px;text-align:center}
+.box h4{margin:12px 0 6px;font-size:13px;color:var(--cyan);font-weight:600}
+.box p{margin:4px 0;font-size:13px;text-align:center}
+.gold{color:var(--gold)!important}.red{color:var(--red)!important}.dim{color:var(--dim)!important;font-size:12px!important}
+.bigNum{font-size:36px;font-weight:800;color:var(--gold);text-align:center}
+.grade{font-size:64px;font-weight:800;text-align:center;line-height:1}
+.flips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.flip{width:96px;min-height:112px;border-radius:14px;border:2px solid #3a475c;background:linear-gradient(160deg,#121c2c,#070b12);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;text-align:center}
+.flip .fb{font-size:30px;animation:pl 1s infinite}
+.flip.r-R{border-color:#2aa874}.flip.r-S{border-color:var(--cyan);box-shadow:0 0 16px rgba(53,230,255,.35)}.flip.r-M{border-color:var(--gold);box-shadow:0 0 22px rgba(255,208,74,.45)}
+.flip.open{animation:flipIn .35s ease-out}
+.flip .e{font-size:34px}.flip .n{font-size:11px;font-weight:500;line-height:1.25;margin-top:3px}.flip .t{font-size:9px;color:var(--dim);margin-top:2px}
+@keyframes flipIn{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+@keyframes pl{50%{opacity:.55}}
+.pick{display:flex;flex-direction:column;gap:7px}
+.cardP{display:grid;grid-template-columns:42px 1fr;grid-template-rows:auto auto auto;column-gap:10px;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid #3a475c;background:var(--panel2);color:var(--txt);font-family:inherit;cursor:pointer;width:100%}
+.cardP:active{transform:scale(.98)}
+.cardP .e{grid-row:1/4;font-size:30px;align-self:center}
+.cardP .nm{font-weight:600;font-size:14px}.cardP .ds{font-size:12px;color:#c9d4e4}.cardP .rr{font-size:10px;color:var(--dim)}
+.cardP.rR{border-color:var(--cyan)}.cardP.rL{border-color:var(--gold);box-shadow:0 0 14px rgba(255,208,74,.25)}
+.btn{border:1px solid var(--cyan);background:#0a2535;color:var(--cyan);border-radius:12px;padding:8px 12px;font-family:inherit;font-size:13px;cursor:pointer}
+.btn:disabled{opacity:.35}
+.btn.ghost{border-color:var(--line);color:var(--dim);background:transparent}
+.btn.gold{border-color:var(--gold);color:var(--gold);background:#2a210a}
+.btnRow{display:flex;gap:8px;margin-top:12px;align-items:stretch}
+.btnRow .big{flex:2}.btnRow .btn{flex:1}
+.diffRow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 2px;border-bottom:1px solid #121c2c;font-size:13px}
+.row .d{color:var(--dim);font-size:11px}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:7px 8px;font-size:11px}
+.card .e{font-size:22px}.card .n{font-weight:500;font-size:12px}.card .l{color:var(--dim);font-size:10px;line-height:1.35;margin-top:2px}
+.card.unk{opacity:.5}
+.r-C{border-color:#3a475c}.r-R{border-color:#2aa874}.r-S{border-color:#38c7e8}.r-M{border-color:var(--gold)}
+.tabs{display:flex;gap:6px;margin:6px 0 8px}
+.psy{font-size:11px;line-height:1.45;padding:5px 0;border-bottom:1px solid #121c2c}.psy b{color:var(--violet);font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:3px 4px;text-align:right;border-bottom:1px solid #121c2c}td:first-child,th:first-child{text-align:left}
+.sw{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}.sw input[type=checkbox]{accent-color:var(--cyan);width:18px;height:18px}
+.tin{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:#050a12;color:var(--txt);font-family:inherit;font-size:15px;margin:8px 0}
+.log{font-size:12px;line-height:1.55;text-align:left;padding:6px 0;border-bottom:1px solid #121c2c}
+.spin{width:40px;height:40px;border-radius:50%;border:4px solid #1b2a40;border-top-color:var(--cyan);margin:14px auto;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.flip .fb{animation:none}.box{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="screen on" id="home">
+    <div class="top"><div><div class="logo">SPIRIT BOX</div><div class="sub" id="stn">99.9 FM</div></div><div class="hz"><b class="mono" id="hHz">0</b><span>Hz</span></div></div>
+    <div id="roomWrap"><canvas id="room"></canvas><div id="roomCap"></div></div>
+    <div id="bandRow"></div>
+    <div id="bestRow"></div>
+    <button class="big" id="startBtn">▶ เริ่มออกอากาศ<small id="startSub"></small></button>
+    <div class="navRow"><button class="nav" data-p="codex">📖 สมุด</button><button class="nav" data-p="up">⚡ อัปเกรด<span class="dot" id="dUp"></span></button><button class="nav" data-p="info">ℹ️ ข้อมูล</button></div>
+    <div id="foot"><span id="sess"></span><span>บันทึกไว้ในเครื่องคุณ</span></div>
+  </div>
+  <div class="screen" id="run">
+    <div class="runTop"><div class="hpWrap"><div class="hpbar"><i id="hpFill"></i></div><span id="hpTxt" class="mono"></span></div><button class="mini" id="pauseBtn">⏸</button></div>
+    <div class="runInfo"><span id="depthTxt"></span><span>Hz <b id="runHz" class="mono">0</b></span></div>
+    <div class="pbar" id="prog"><i id="progFill"></i></div>
+    <div id="scopeWrap"><div id="ytBox"></div><canvas id="scope"></canvas></div>
+    <div id="comboBig"><b id="cNum" class="mono">0</b><span id="cLbl">COMBO</span><span id="cMul"></span></div>
+    <div id="held"></div>
+    <div id="tapHint">แตะ ซ้าย · กลาง · ขวา ของจอ ให้ตรงเลนตอนโน้ตถึงวง · ห้ามแตะ ✖</div>
+    <div id="tempoUI">
+      <p><b class="gold">จับจังหวะ</b> · ① ถ้าวิดีโอยังไม่เล่น แตะที่วิดีโอ ② แตะปุ่มด้านล่างตามจังหวะกลอง (ตุ้บ ตุ้บ) อย่างน้อย 8 ครั้ง ③ กดเริ่มเกม · ถ้ารู้ BPM พิมพ์ใส่ได้ จะแม่นที่สุด</p>
+      <button class="big" id="tapTempo">👆 แตะตามจังหวะ</button>
+      <div class="row"><span>BPM <b id="bpmV" class="mono gold">–</b> · แตะ <span id="tapN">0</span> ครั้ง</span><input id="bpmIn" class="tin" style="width:110px;margin:0" placeholder="พิมพ์ BPM" inputmode="decimal"></div>
+      <div class="btnRow"><button class="btn ghost" id="tReset">ล้าง/เริ่มเพลงใหม่</button><button class="btn gold" id="tGo" disabled>▶ เริ่มเกม</button></div>
+    </div>
+  </div>
+  <div id="ov"></div>
+</div>
+
+<script>
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt(n){n=Math.floor(n);if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';return n.toLocaleString()}
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+
+/* ================= DATA ================= */
+const BANDS=[
+ {fm:'88.1',name:'เมืองเก่า',bpm:96,mult:1,cost:0,root:57,col:'#35e6ff',boss:{e:'🕯️',n:'ผู้เข้าสิงแห่งเสาไฟ'}},
+ {fm:'94.5',name:'ชานเมืองร้าง',bpm:106,mult:4,cost:3000,root:55,col:'#3dffa0',boss:{e:'🪆',n:'ผู้เข้าสิงแห่งทุ่งหุ่นฟาง'}},
+ {fm:'99.9',name:'ความว่างเปล่า',bpm:116,mult:15,cost:30000,root:52,col:'#b48cff',boss:{e:'👁️',n:'ผู้เข้าสิงแห่งห้องที่ 13'}}
+];
+const PENTA=[0,3,5,7,10,12,15,17,19];
+const RNAME={C:'COMMON',R:'RARE',S:'SSR',M:'MYTHIC'};
+const RBASE={C:20,R:60,S:200,M:800};
+const DIFFS=[
+ {n:'ง่าย',e:'🌙',gap:.42,ft:1.5,base:0,dm:14},
+ {n:'กลาง',e:'🔥',gap:.29,ft:1.28,base:.25,dm:18},
+ {n:'ยาก',e:'💀',gap:.2,ft:1.08,base:.5,dm:22},
+ {n:'โหด',e:'👹',gap:.14,ft:.92,base:.75,dm:26}
+];
+const SP=[
+ {id:1,b:0,r:'C',e:'📻',n:'เสียงกระซิบข้างเสาไฟ'},{id:2,b:0,r:'C',e:'👤',n:'เงาคนยืนริมระเบียง'},{id:3,b:0,r:'C',e:'☎️',n:'กริ่งโทรศัพท์สาธารณะ'},
+ {id:4,b:0,r:'R',e:'🎙️',n:'คลื่นแทรกห้องส่งเก่า'},{id:5,b:0,r:'R',e:'👣',n:'รอยเท้าเปียกหน้าลิฟต์'},{id:6,b:0,r:'S',e:'👧',n:'เด็กหญิงถือวิทยุทรานซิสเตอร์'},
+ {id:7,b:0,r:'M',e:'🎧',n:'ดีเจคืนสุดท้าย'},
+ {id:8,b:1,r:'C',e:'🌫️',n:'ลมหายใจในท่อระบายน้ำ'},{id:9,b:1,r:'C',e:'🎵',n:'เพลงกล่อมจากบ้านร้าง'},{id:10,b:1,r:'C',e:'🌾',n:'หุ่นฟางข้างทาง'},
+ {id:11,b:1,r:'R',e:'🚌',n:'รถเมล์สายสุดท้าย'},{id:12,b:1,r:'R',e:'🕵️',n:'ผู้ตรวจการคลื่นมรณะ'},{id:13,b:1,r:'S',e:'💃',n:'นางรำคลื่นสุญญากาศ'},
+ {id:14,b:1,r:'M',e:'📢',n:'ผู้ประกาศจากหอกระจายเสียง'},
+ {id:15,b:2,r:'C',e:'🕰️',n:'นาฬิกาที่เดินถอยหลัง'},{id:16,b:2,r:'C',e:'🌀',n:'เสียงที่ไม่มีต้นทาง'},{id:17,b:2,r:'C',e:'🪞',n:'ภาพสะท้อนหลังกระจก'},
+ {id:18,b:2,r:'R',e:'🚪',n:'ห้องที่ 13'},{id:19,b:2,r:'R',e:'🧏',n:'ผู้ฟังคนสุดท้าย'},{id:20,b:2,r:'S',e:'👁️‍🗨️',n:'เทวทูตคลื่น 99.9'},
+ {id:21,b:2,r:'M',e:'👑',n:'ราชันย์แห่งความว่างเปล่า'}
+];
+const STORY={
+1:'คืนที่ 1 · เครื่องส่งที่เสาไฟต้นที่ 9 ยังทำงาน ทั้งที่ไฟถูกตัดมาสามปีแล้ว',
+2:'คืนที่ 2 · เงาบนระเบียงคือพนักงานกะดึก เขายังรอผลัดเวรที่ไม่มีวันมา',
+3:'คืนที่ 3 · สายขอเพลงเข้ามา 02:14 ทุกคืน เบอร์ต้นทางไม่มีในทะเบียนใดในประเทศนี้',
+4:'ดีเจประจำสถานีชื่อ "พี่ต้น" เขาไม่เคยบอกใครเลยว่าตัวเองจากไปแล้ว',
+5:'รอยเท้าเปียกวนจากห้องส่งไปหน้าลิฟต์แล้วกลับมาที่เดิม ราวกับหาทางออกไม่เจอ',
+6:'เด็กหญิงโทรขอเพลงกล่อมเด็กเพลงเดิมทุกคืน เพลงนั้นไม่เคยมีในคลังเสียงของสถานี',
+7:'เทปรายการสุดท้ายยาว 31 นาที ท้ายเทปพี่ต้นพูดว่า "ถ้ายังมีคนฟังอยู่ อย่าเพิ่งปิดวิทยุนะ"',
+8:'ผู้ฟังที่ไม่ปิดวิทยุจะไม่ได้หลับสนิทอีกเลย เสียงในท่อหายใจตามจังหวะคนหลับ',
+9:'ทำนองเดียวกับที่เด็กหญิงขอ แต่ครั้งนี้มีเสียงผู้หญิงร้องคลอตาม',
+10:'ชาวบ้านตั้งหุ่นฟางเฝ้าปากทางเข้าสถานี ตอนนี้มันหันหน้าเข้าหาเสาส่ง',
+11:'รถสายสุดท้ายจอดหน้าสถานีตอนตีสาม รับผู้โดยสารที่ถือวิทยุทรานซิสเตอร์คนละเครื่อง',
+12:'วิศวกรจากกรมมาตรวจเครื่องส่ง เขาพบว่ากำลังส่งไม่ได้มาจากเครื่อง',
+13:'ดนตรีไทยที่ได้ยินคือการแสดงวันเปิดสถานีเมื่อสี่สิบปีก่อน ไม่มีใครเคยเห็นรอบนั้นจบ',
+14:'หอกระจายเสียงประกาศชื่อผู้ฟังคนใหม่ล่วงหน้าเสมอ ก่อนเขาจะรู้ตัวว่ากำลังฟังอยู่',
+15:'นาฬิกาห้องส่งเดินถอยหลัง นับถึงเวลาที่ใครสักคนจะเปิดเครื่องรับอีกครั้ง',
+16:'ทิศของเสียงไม่ได้ชี้ไปที่เสาส่ง มันชี้มาที่ผู้ฟัง',
+17:'กระจกห้องส่งสะท้อนคุณช้ากว่าเดิมครึ่งวินาที และสะท้อนหูฟังอยู่แค่ข้างเดียว',
+18:'ห้องที่ 13 ไม่มีในแปลนตึก ข้างในมีโต๊ะดีเจ ไมค์ และเก้าอี้ที่ยังอุ่นอยู่',
+19:'เขาไม่ใช่ผี เขาคือคนที่ไม่ยอมปิดวิทยุ จนกลายเป็นส่วนหนึ่งของคลื่น',
+20:'คลื่น 99.9 ไม่ได้ส่งออกจากสถานี มันถูกสร้างขึ้นจากทุกคนที่เคยฟัง',
+21:'พี่ต้นไม่เคยหายไป เขารอคนรับไมค์ต่อ... และไมค์ตัวนั้นเปิดค้างไว้ตั้งแต่ครั้งแรกที่คุณแตะจอ'
+};
+const CARDS=[
+ {id:'amp',e:'📢',n:'เครื่องขยายเสียง',r:'C',d:'Hz ×1.3',f:R=>R.hzMul*=1.3},
+ {id:'wide',e:'📡',n:'เสาอากาศกว้าง',r:'C',d:'หน้าต่างจังหวะกว้างขึ้น 15%',f:R=>R.win*=1.15},
+ {id:'heart',e:'🧿',n:'ยันต์คุ้มกาย',r:'C',d:'HP สูงสุด +25 และฟื้น 25',f:R=>{R.hpMax+=25;R.hp=Math.min(R.hpMax,R.hp+25)}},
+ {id:'gold',e:'🪙',n:'เหรียญทองโบราณ',r:'C',d:'โน้ตทอง (Hz ×5) ออกบ่อยขึ้น ×1.8',f:R=>R.goldCh=Math.min(.3,R.goldCh*1.8)},
+ {id:'heal',e:'💧',n:'น้ำมนต์',r:'C',d:'PERFECT ฟื้น HP +1.5',f:R=>R.healP+=1.5},
+ {id:'patch',e:'🩹',n:'ผ้ายันต์',r:'C',d:'ฟื้น HP เต็มทันที',f:R=>R.hp=R.hpMax},
+ {id:'shield',e:'🔔',n:'ระฆังกันผี',r:'R',d:'กันการพลาดได้ 1 ครั้งต่อท่อน (โหมดเพลง: ทุก 30 วิ)',f:R=>{R.shieldPer++;R.shields++}},
+ {id:'ghost',e:'🪤',n:'กับดักวิญญาณ',r:'R',d:'โน้ตวิญญาณ 👻 ออกบ่อยขึ้น',f:R=>R.ghostN++},
+ {id:'luck',e:'🧧',n:'ธูปเสี่ยงทาย',r:'R',d:'โอกาส SSR/MYTHIC ×1.5',f:R=>R.luck*=1.5},
+ {id:'eye',e:'🔮',n:'ตาที่สาม',r:'R',d:'โน้ตล่องหนไม่หาย และเห็นปลายทางโน้ตเปลี่ยนเลน',f:R=>R.eye=true,once:1},
+ {id:'cap',e:'🔥',n:'ไฟคอมโบ',r:'R',d:'เพดานตัวคูณคอมโบ +1x',f:R=>R.comboCap+=20},
+ {id:'cold',e:'🧊',n:'ใจนิ่ง',r:'R',d:'ความเสียหายที่ได้รับ −25%',f:R=>R.dmgMul*=.75},
+ {id:'blade',e:'🗡️',n:'มีดหมอ',r:'R',d:'ความเสียหายต่อบอส ×1.5',f:R=>R.bossDmg*=1.5},
+ {id:'greed',e:'💎',n:'ทรัพย์อาถรรพ์',r:'L',d:'Hz ×2 แต่ HP สูงสุด −30',f:R=>{R.hzMul*=2;R.hpMax=Math.max(30,R.hpMax-30);R.hp=Math.min(R.hp,R.hpMax)}},
+ {id:'echo',e:'🌀',n:'เสียงสะท้อน',r:'L',d:'PERFECT นับคอมโบ +2',f:R=>R.echo+=1},
+ {id:'phoenix',e:'🪶',n:'ขนนกไฟ',r:'L',d:'ตายครั้งแรก ฟื้นที่ HP 50%',f:R=>R.phoenix++,once:1}
+];
+const UPS=[
+ {k:'hp',n:'ยันต์ประจำตัว',base:250,max:5,d:l=>`HP เริ่มต้น ${100+l*10} → ${110+l*10}`},
+ {k:'win',n:'หูทิพย์',base:300,max:5,d:l=>`หน้าต่างจังหวะ +${l*5}% → +${(l+1)*5}%`},
+ {k:'hz',n:'เครื่องขยายถาวร',base:200,max:20,d:l=>`Hz +${l*10}% → +${(l+1)*10}%`},
+ {k:'luck',n:'จูนละเอียด',base:400,max:10,d:l=>`โอกาส SSR/MYTHIC +${l*8}% → +${(l+1)*8}%`},
+ {k:'reroll',n:'ลูกเต๋าวิญญาณ',base:800,max:3,d:l=>`สุ่มการ์ดใหม่ได้ ${l} → ${l+1} ครั้ง/รอบ`},
+ {k:'start',n:'ของติดตัว',base:1500,max:2,d:l=>`เริ่มรอบพร้อมการ์ดธรรมดา ${l} → ${l+1} ใบ`}
+];
+const ucost=u=>Math.round(u.base*Math.pow(1.6,S.up[u.k]));
+const ROOMITEMS=[{n:5,t:'🕯️ เทียนไข'},{n:10,t:'🖼️ กรอบรูปเก่า'},{n:15,t:'🌑 เงาที่หน้าต่าง'},{n:21,t:'👑 รัศมีผู้ประกาศ'}];
+const TIERN=['','FEVER','TRANCE','ASCEND'],TIERC=['#35e6ff','#3dffa0','#b48cff','#ffd04a'];
+const tierOf=c=>c>=40?3:c>=20?2:c>=8?1:0;
+
+/* ================= STATE ================= */
+const DEF={hz:0,station:'',spirits:{},pSSR:0,pM:0,band:0,bands:[true,false,false],
+ up:{hp:0,win:0,hz:0,luck:0,reroll:0,start:0},best:{reach:0,combo:0,hz:0},runs:0,bossWins:0,finale:false,
+ dailyDate:'',dailyRuns:0,songs:{},ytTempo:{},lastDiff:1,
+ set:{sound:true,haptic:true,shake:true,showTime:true,breaks:true,offset:0}};
+let S=JSON.parse(JSON.stringify(DEF));
+try{
+ const r=localStorage.getItem('spiritbox_v3');
+ if(r){const p=JSON.parse(r);S={...S,...p,up:{...S.up,...p.up},best:{...S.best,...p.best},set:{...S.set,...p.set},songs:p.songs||{},ytTempo:p.ytTempo||{}}}
+ else{const o=localStorage.getItem('spiritbox_v2');if(o){const p=JSON.parse(o);if(p.spirits)S.spirits=p.spirits;if(p.station)S.station=p.station}}
+}catch(e){}
+function save(){try{localStorage.setItem('spiritbox_v3',JSON.stringify(S))}catch(e){}}
+const owned=()=>Object.keys(S.spirits).length;
+const setDone=b=>SP.filter(s=>s.b===b).every(s=>S.spirits[s.id]);
+function dailyCheck(){if(S.dailyDate!==today()){S.dailyDate=today();S.dailyRuns=0}}
+
+/* ================= AUDIO ================= */
+let AC=null,master,musG,sfxG,songG,bassLP,noiseBuf;
+function audioInit(){
+ if(AC){if(AC.state==='suspended'&&!paused)AC.resume();return}
+ try{
+  AC=new (window.AudioContext||window.webkitAudioContext)();
+  master=AC.createGain();master.gain.value=S.set.sound?.9:0;master.connect(AC.destination);
+  const dl=AC.createDelay();dl.delayTime.value=.27;const fb=AC.createGain();fb.gain.value=.3;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;
+  dl.connect(lp);lp.connect(fb);fb.connect(dl);lp.connect(master);
+  musG=AC.createGain();musG.gain.value=.55;musG.connect(master);
+  songG=AC.createGain();songG.gain.value=.95;songG.connect(master);
+  sfxG=AC.createGain();sfxG.gain.value=.75;sfxG.connect(master);
+  const send=AC.createGain();send.gain.value=.35;sfxG.connect(send);send.connect(dl);
+  bassLP=AC.createBiquadFilter();bassLP.type='lowpass';bassLP.frequency.value=420;bassLP.connect(musG);
+  noiseBuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+ }catch(e){AC=null}
+}
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function osc(type,f,t,dur,vol,dest,att=.005){
+ if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0005,t+dur);
+ o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);return o;
+}
+function noise(t,dur,vol,freq,dest,type='highpass'){
+ if(!AC)return;const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;
+ const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0005,t+dur);s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+dur+.02);
+}
+function kick(t,v){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(40,t+.14);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.24);o.connect(g);g.connect(musG);o.start(t);o.stop(t+.26)}
+const PROG=[0,-4,3,-2];
+function layerNow(){if(!R)return 0;const t=tierOf(R.combo);return R.boss?Math.max(1,t):t}
+function musicStep(i,t){
+ if(!AC||!R)return;
+ const b=BANDS[S.band],bar=Math.floor(i/8)%4,s=i%8,root=b.root+PROG[bar],L=layerNow();
+ if(R.countIn&&i<8){if(s%2===0)osc('square',s===0?1568:1175,t,.05,.05,musG);return}
+ if(s===0||s===4)kick(t,.55);
+ if(s===4)noise(t,.13,.16,1700,musG,'bandpass');
+ if(s===0){osc('sawtooth',mtof(root-24),t,R.stepDur*7.6,.12,bassLP,.02);osc('triangle',mtof(root-12),t,R.stepDur*7.6,.035,musG,.25);osc('triangle',mtof(root-5),t,R.stepDur*7.6,.025,musG,.3)}
+ if(s===6&&bar%2)osc('sawtooth',mtof(root-24+7),t,R.stepDur*1.6,.08,bassLP);
+ if(L>=1&&s%2===1)noise(t,.035,.07,7500,musG);
+ if(L>=2)osc('triangle',mtof(root+12+[0,3,7,10][s%4]),t,.16,.03,musG);
+ if(L>=3&&s%2===0)osc('sine',mtof(root+24+[7,3,0,-2][(s/2)%4]),t,.32,.03,musG);
+}
+function hitSound(n,perfect){
+ if(!AC)return;const t=AC.currentTime;
+ if(R.mode!=='gen'){ // song modes: unobtrusive percussive tick
+  if(n.type==='gold'){[0,7,12].forEach((k,i)=>osc('sine',mtof(84+k),t+i*.03,.25,.045,sfxG));return}
+  noise(t,.035,perfect?.11:.07,perfect?5200:3500,sfxG,'highpass');osc('sine',perfect?1760:1320,t,.06,.03,sfxG);return;
+ }
+ const m=n.p;
+ if(n.type==='gold'){[0,4,7,12].forEach((k,i)=>osc('triangle',mtof(m+k),t+i*.03,.4,.09,sfxG));return}
+ osc('triangle',mtof(m),t,.38,.17,sfxG);osc('sine',mtof(m+12),t,.25,.05,sfxG);
+ if(perfect)osc('sine',mtof(m+24),t,.14,.035,sfxG);
+}
+function staticSound(v=.16){if(!AC)return;const t=AC.currentTime;noise(t,.2,v,1300,sfxG,'bandpass');osc('sawtooth',90,t,.22,.05,sfxG)}
+function fanfare(r){if(!AC)return;const t=AC.currentTime,b=BANDS[S.band].root+12;const seq=r==='M'?[0,3,7,12,15,19,24]:r==='S'?[0,7,12,15]:[0,7,12];seq.forEach((k,i)=>osc('triangle',mtof(b+k),t+i*.07,.5,.08,sfxG))}
+function buzz(p){if(S.set.haptic&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+
+/* ================= AUDIO FILE ANALYSIS ================= */
+function fft(re,im){
+ const n=re.length;
+ for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+ for(let len=2;len<=n;len<<=1){
+  const ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang);
+  for(let i=0;i<n;i+=len){let cr=1,ci=0;
+   for(let k=0;k<len/2;k++){const a=i+k,b=a+len/2,xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;const nr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=nr}}
+ }
+}
+async function analyzeBuffer(buf,progress){
+ const sr=buf.sampleRate,c0=buf.getChannelData(0),c1=buf.numberOfChannels>1?buf.getChannelData(1):c0;
+ const ds=2,N=Math.floor(c0.length/ds),x=new Float32Array(N);
+ for(let i=0;i<N;i++)x[i]=(c0[i*ds]+c1[i*ds])*.5;
+ const fsr=sr/ds,F=1024,H=256,nF=Math.max(0,Math.floor((N-F)/H));
+ const win=new Float32Array(F);for(let i=0;i<F;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/(F-1));
+ const re=new Float32Array(F),im=new Float32Array(F),prev=new Float32Array(F/2),env=new Float32Array(nF);
+ const lowBin=Math.round(180/(fsr/F));
+ for(let f=0;f<nF;f++){
+  const o=f*H;for(let i=0;i<F;i++){re[i]=x[o+i]*win[i];im[i]=0}
+  fft(re,im);let flux=0;
+  for(let k=1;k<F/2;k++){const m=Math.log1p(60*Math.hypot(re[k],im[k]));const d=m-prev[k];if(d>0)flux+=k<=lowBin?d*5:d;prev[k]=m}
+  env[f]=flux;
+  if(f%1500===0){progress&&progress(f/nF);await new Promise(r=>setTimeout(r,0))}
+ }
+ const fps=fsr/H;
+ // local-mean threshold peak picking
+ const ps=new Float64Array(nF+1);for(let i=0;i<nF;i++)ps[i+1]=ps[i]+env[i];
+ const w=Math.round(fps*.3),raw=[];
+ let gm=ps[nF]/Math.max(1,nF);
+ for(let i=3;i<nF-3;i++){
+  const v=env[i];if(v<env[i-1]||v<env[i+1]||v<env[i-2]||v<env[i+2]||v<env[i-3]||v<env[i+3])continue;
+  const a=Math.max(0,i-w),b=Math.min(nF,i+w),m=(ps[b]-ps[a])/(b-a);
+  if(v>m*1.35+gm*.08)raw.push({t:(i*H+F/2)/fsr,s:v});
+ }
+ const sorted=raw.map(o=>o.s).sort((a,b)=>a-b),p95=sorted[Math.floor(sorted.length*.95)]||1;
+ raw.forEach(o=>o.s=clamp(o.s/p95,0,1));
+ // tempo by autocorrelation
+ const lo=Math.floor(fps*60/185),hi=Math.ceil(fps*60/68);
+ const a0=Math.floor(nF*.1),a1=Math.min(nF,a0+Math.floor(fps*90));
+ let best=0,bl=lo;
+ for(let L=lo;L<=hi;L++){let s=0;for(let i=a0;i<a1-L;i++)s+=env[i]*env[i+L];const bpm=60*fps/L,wt=Math.exp(-.5*Math.pow(Math.log2(bpm/120)/.8,2));s*=wt;if(s>best){best=s;bl=L}}
+ const bpm=60*fps/bl,beat=60/bpm;
+ let sx=0,sy=0;raw.forEach(o=>{const a=2*Math.PI*o.t/beat;sx+=o.s*Math.cos(a);sy+=o.s*Math.sin(a)});
+ const phase=((Math.atan2(sy,sx)/(2*Math.PI))*beat+beat)%beat,six=beat/4;
+ raw.forEach(o=>{const g=phase+Math.round((o.t-phase)/six)*six;if(Math.abs(g-o.t)<.035)o.t=g});
+ progress&&progress(1);
+ return{dur:buf.duration,onsets:raw,bpm,phase};
+}
+
+/* ================= CLOCK / YOUTUBE ================= */
+let ytP=null,ytBase={vt:0,pt:0,playing:false},ytDur=0,ytEnded=false;
+function ytNow(){return ytBase.playing?ytBase.vt+(performance.now()-ytBase.pt)/1000:ytBase.vt}
+function clk(){
+ if(R&&R.mode==='yt')return ytNow()-S.set.offset/1000;
+ return AC?AC.currentTime-(AC.outputLatency||0)-S.set.offset/1000:0;
+}
+function ytParse(u){u=u.trim();const m=u.match(/(?:youtu\.be\/|v=|shorts\/|embed\/|live\/)([A-Za-z0-9_-]{11})/);if(m)return m[1];if(/^[A-Za-z0-9_-]{11}$/.test(u))return u;return null}
+function loadYTApi(){
+ return new Promise((res,rej)=>{
+  if(window.YT&&YT.Player)return res();
+  const prev=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{prev&&prev();res()};
+  const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);
+  setTimeout(()=>rej(new Error('timeout')),12000);
+ });
+}
+function ytMake(id){
+ return new Promise((res,rej)=>{
+  $('ytBox').innerHTML='<div id="ytp"></div>';$('ytBox').style.display='block';
+  ytBase={vt:0,pt:performance.now(),playing:false};ytEnded=false;
+  ytP=new YT.Player('ytp',{videoId:id,width:'100%',height:'100%',
+   playerVars:{controls:0,disablekb:1,playsinline:1,rel:0,modestbranding:1,fs:0,iv_load_policy:3},
+   events:{onReady:()=>{ytDur=ytP.getDuration()||0;res()},onError:e=>rej(new Error('yt'+e.data)),
+    onStateChange:e=>{
+     const st=e.data,t=ytP.getCurrentTime?ytP.getCurrentTime():0;
+     if(st===1){ytBase={vt:t,pt:performance.now(),playing:true};ytDur=ytP.getDuration()||ytDur}
+     else{ytBase={vt:t,pt:performance.now(),playing:false};if(st===0)ytEnded=true}
+    }}});
+ });
+}
+setInterval(()=>{
+ if(!ytP||!ytP.getCurrentTime||!ytBase.playing)return;
+ const t=ytP.getCurrentTime(),pred=ytNow(),err=t-pred;
+ if(Math.abs(err)>.15)ytBase={vt:t,pt:performance.now(),playing:true};else ytBase.vt+=err*.08;
+},60);
+function ytKill(){try{ytP&&ytP.destroy()}catch(e){}ytP=null;$('ytBox').innerHTML='';$('ytBox').style.display='none';ytBase={vt:0,pt:0,playing:false}}
+
+/* ================= RUN STATE ================= */
+let R=null,paused=false,lastSong=null;
+function newRun(mode){
+ R={mode,depth:1,verse:1,boss:false,bossHP:0,bossMax:0,bossDone:false,hpMax:100+S.up.hp*10,hp:0,win:1+.05*S.up.win,hzMul:(1+.1*S.up.hz),
+  comboCap:40,shieldPer:0,shields:0,goldCh:.06,ghostN:1,luck:1,healP:0,dmgMul:1,eye:false,bossDmg:1,echo:0,phoenix:0,
+  rerolls:S.up.reroll,cards:{},combo:0,maxCombo:0,hz:0,score:0,caught:[],pending:[],perf:0,good:0,miss:0,
+  bpm:0,stepDur:.3,T0:0,nextStep:0,notes:[],countIn:true,verseEnd:0,state:'play',afterBoss:false,lastBonus:0,bossShake:0,lastTier:0,
+  ft:1.45,song:null,dur:0,lv:1,cleared:false,src:null,lastShieldT:0};
+ R.hp=R.hpMax;
+ for(let i=0;i<S.up.start;i++){const c=drawCards(1,'C')[0];if(c){c.f(R);R.cards[c.id]=(R.cards[c.id]||0)+1}}
+}
+function drawCards(n,only){
+ const out=[];let g=0;
+ while(out.length<n&&g++<200){
+  const rr=Math.random()*100,rar=only||(rr<8?'L':rr<40?'R':'C');
+  const pool=CARDS.filter(c=>c.r===rar&&!out.includes(c)&&!(c.once&&R.cards[c.id]));
+  if(pool.length)out.push(pick(pool));
+ }
+ return out;
+}
+
+/* ---- note pattern engine (3 lanes) ---- */
+function LaneGen(){
+ let lane=1,mode='rand',left=0,dir=1;
+ return function(diff){
+  if(left<=0){const ms=['rand','stairs','alt','jump','jack','rand'];mode=ms[Math.floor(Math.random()*(diff>.35?6:4))];left=3+Math.floor(Math.random()*5);dir=Math.random()<.5?1:-1}
+  left--;
+  if(mode==='rand'){let l;do{l=Math.floor(Math.random()*3)}while(l===lane&&Math.random()<.7);lane=l}
+  else if(mode==='stairs'){lane+=dir;if(lane>2){lane=1;dir=-1}if(lane<0){lane=1;dir=1}}
+  else if(mode==='alt'){lane=lane===0?2:lane===2?0:(Math.random()<.5?0:2)}
+  else if(mode==='jump'){lane=lane===1?(Math.random()<.5?0:2):1}
+  return lane;
+ };
+}
+function mkNote(t,lane,type,diff,p){
+ const n={t,lane,type,j:0,sp:1,p:p||0,from:lane};
+ if(type==='tap'||type==='phantom'){
+  const r=Math.random();
+  if(diff>.12&&r<.05+.14*diff){n.type='sw';n.lane=(lane+1+Math.floor(Math.random()*2))%3}
+  else if(diff>.2&&r<.12+.22*diff)n.sp=1.5;
+ }
+ return n;
+}
+function addBombsAndExtras(notes,diff,bombP,dblP){
+ // doubles
+ const extra=[];
+ for(const n of notes){if(n.type==='tap'&&n.strong&&Math.random()<dblP){const l=(n.lane+1+Math.floor(Math.random()*2))%3;extra.push({t:n.t,lane:l,type:'tap',j:0,sp:1,p:n.p+7,from:l})}}
+ notes.push(...extra);
+ notes.sort((a,b)=>a.t-b.t);
+ // bombs in gaps
+ const out=[];
+ for(let i=0;i<notes.length;i++){
+  out.push(notes[i]);
+  const a=notes[i],b=notes[i+1];if(!b)break;
+  const gap=b.t-a.t;
+  if(gap>.45&&Math.random()<bombP){
+   let l;do{l=Math.floor(Math.random()*3)}while(l===b.lane||l===a.lane);
+   out.push({t:a.t+gap*(.45+Math.random()*.15),lane:l,type:'bomb',j:0,sp:1,p:0,from:l});
+  }else if(gap<.35&&diff>.45&&Math.random()<bombP*.6){
+   const l=[0,1,2].find(x=>x!==a.lane&&x!==b.lane);if(l!==undefined)out.push({t:a.t,lane:l,type:'bomb',j:0,sp:1,p:0,from:l});
+  }
+ }
+ out.sort((a,b)=>a.t-b.t);
+ return out;
+}
+function makeGhosts(notes,count){
+ const taps=notes.filter(n=>n.type==='tap'&&n.sp===1);
+ for(let k=0;k<count&&taps.length;k++){const n=taps.splice(Math.floor(Math.random()*taps.length),1)[0];n.type='ghost'}
+}
+const PAT={
+ e:[[1,0,0,0,1,0,0,0],[1,0,1,0,1,0,0,0],[1,0,0,0,1,0,1,0],[1,0,1,0,0,0,1,0],[0,0,1,0,1,0,1,0],[1,0,0,0,0,0,1,0],[1,0,0,1,0,0,1,0]],
+ m:[[1,0,1,1,0,0,1,0],[1,1,0,1,0,0,1,0],[1,0,0,1,0,0,1,0],[0,1,0,1,0,1,0,1],[1,0,1,0,1,1,1,0],[1,0,0,1,1,0,1,0],[0,0,1,1,0,1,1,0],[1,0,1,0,0,1,0,1]],
+ h:[[1,1,1,0,1,1,1,0],[1,0,1,1,1,0,1,1],[1,1,0,1,1,0,1,0],[1,0,0,1,0,1,1,1],[0,1,1,0,1,1,0,1],[1,1,1,1,0,0,1,0],[1,0,1,1,0,1,1,1]],
+ rest:[[1,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0]]
+};
+function pickBar(diff){
+ if(Math.random()<.07)return pick(PAT.rest);
+ const r=Math.random();
+ if(diff<.2)return r<.7?pick(PAT.e):pick(PAT.m);
+ if(diff<.55)return r<.55?pick(PAT.m):r<.8?pick(PAT.e):pick(PAT.h);
+ return r<.55?pick(PAT.h):pick(PAT.m);
+}
+/* grid-based chart (gen mode verses & YouTube) */
+function gridChart(t0,sd,steps,diffAt,startStep){
+ const notes=[],lg=LaneGen(),b=BANDS[S.band];let pi=4;
+ for(let bar=0;bar*8<steps;bar++){
+  const tb=t0+bar*8*sd,diff=diffAt(tb),pat=pickBar(diff);
+  for(let s=0;s<8;s++){
+   const i=bar*8+s;if(i<startStep||i>=steps||!pat[s])continue;
+   const t=t0+i*sd;pi=clamp(pi+Math.floor(Math.random()*5)-2,0,8);
+   let type='tap';const r=Math.random();
+   if(r<R.goldCh)type='gold';else if(diff>.15&&r<R.goldCh+.05+.12*diff)type='phantom';
+   const n=mkNote(t,lg(diff),type,diff,b.root+PENTA[pi]);n.strong=s===0||s===4;notes.push(n);
+  }
+ }
+ return notes;
+}
+/* onset-based chart (audio file) */
+function onsetChart(an,lv,t0){
+ const D=DIFFS[lv],lg=LaneGen(),notes=[];let last=-9,pi=4;
+ const cand=an.onsets.filter(o=>o.t>2.2&&o.t<an.dur-.5);
+ // greedy by strength with min-gap (gap shrinks in boss section)
+ const by=[...cand].sort((a,b)=>b.s-a.s),taken=[];
+ const ok=(t,gap)=>{for(const x of taken)if(Math.abs(x-t)<gap)return false;return true};
+ for(const o of by){const prog=o.t/an.dur,gap=D.gap*(prog>.75?.8:1);if(o.s<.12)continue;if(ok(o.t,gap))taken.push(o.t),o.keep=1}
+ for(const o of cand){
+  if(!o.keep)continue;const prog=o.t/an.dur,diff=clamp(D.base+prog*.25,0,1);
+  pi=clamp(pi+Math.floor(Math.random()*5)-2,0,8);
+  let type='tap';const r=Math.random();
+  if(o.s>.75&&r<R.goldCh*1.6)type='gold';else if(diff>.15&&r<R.goldCh+.04+.1*diff)type='phantom';
+  const n=mkNote(t0+o.t,lg(diff),type,diff,0);n.strong=o.s>.8;notes.push(n);
+ }
+ return notes;
+}
+
+/* ================= START FLOWS ================= */
+function startGen(){
+ audioInit();if(!AC)return alert('เบราว์เซอร์นี้เล่นเสียงไม่ได้');
+ ytKill();newRun('gen');enterRun();startVerse();
+}
+function enterRun(){
+ show('run');renderHeld();wrapGlow(0);$('tempoUI').style.display='none';
+ $('tapHint').style.visibility=S.runs<4?'visible':'hidden';
+}
+function startVerse(){
+ const b=BANDS[S.band];
+ R.bpm=b.bpm+(R.depth-1)*8+(R.verse-1)*3+(R.boss?4:0);
+ R.ft=Math.max(.85,1.45-.12*(R.depth-1)-.03*(R.verse-1));
+ R.stepDur=60/R.bpm/2;R.T0=AC.currentTime+.12;R.nextStep=0;R.countIn=true;
+ const diff=Math.min(1,(R.depth-1)*.3+(R.verse-1)*.1+(R.boss?.25:0));
+ let notes=gridChart(R.T0,R.stepDur,64,()=>diff,8);
+ makeGhosts(notes,R.ghostN);
+ R.notes=addBombsAndExtras(notes,diff,(R.boss?.35:.1)+.15*diff,.05+.25*diff);
+ R.verseEnd=R.T0+64*R.stepDur;R.shields=R.shieldPer;R.state='play';
+ $('prog').className='pbar'+(R.boss?' boss':'');
+ bigPop(R.boss?`${b.boss.e} ${b.boss.n}`:`ชั้น ${R.depth} · ท่อน ${R.verse}/3`,R.boss?'#ff4d73':'#35e6ff');
+}
+/* --- song modes: choose difficulty then 2 pre-picks --- */
+function chooseDiff(title,cb){
+ showOv(`<h2>${title}</h2><p class="dim">เลือกความยาก</p><div class="diffRow">${DIFFS.map((d,i)=>`<button class="cardP ${i===S.lastDiff?'rR':''}" data-dv="${i}" style="grid-template-columns:34px 1fr"><span class="e">${d.e}</span><span class="nm">${d.n}</span><span class="ds">พลาด −${d.dm} HP · โดนฟื้นทีละนิด</span></button>`).join('')}</div><div class="btnRow"><button class="btn ghost" id="cls">ยกเลิก</button></div>`);
+ document.querySelectorAll('[data-dv]').forEach(el=>el.onclick=()=>{S.lastDiff=+el.dataset.dv;save();cb(+el.dataset.dv)});
+ $('cls').onclick=closeOv;
+}
+function prePicks(n,done){
+ if(n<=0)return done();
+ showOv(`<h2>เลือกพลังก่อนออกอากาศ</h2><p class="dim">เหลืออีก ${n} ใบ</p><div id="pickArea"></div>`);
+ renderPick(drawCards(3),()=>prePicks(n-1,done));
+}
+function openModes(){
+ showOv(`<h2>เลือกคลื่น</h2>
+ <div class="pick">
+  <button class="cardP rR" id="mGen"><span class="e">📻</span><span class="nm">สถานีผี (Roguelite)</span><span class="ds">เพลงที่เกมแต่งสด ลงลึกทีละชั้น เจอบอสทุก 3 ท่อน</span><span class="rr">แตะโดน = คุณเล่นทำนองเอง</span></button>
+  <button class="cardP" id="mFile"><span class="e">📁</span><span class="nm">เพลงในเครื่อง</span><span class="ds">เลือกไฟล์ MP3 / M4A / WAV เกมวิเคราะห์จังหวะจริงจากเพลง</span><span class="rr">ไฟล์ไม่ถูกส่งไปไหน วิเคราะห์ในเครื่องคุณ</span></button>
+  <button class="cardP" id="mYt"><span class="e">▶️</span><span class="nm">YouTube</span><span class="ds">วางลิงก์ แล้วแตะตามจังหวะเพื่อจับ BPM</span><span class="rr">ต้องใช้อินเทอร์เน็ต · เหมาะกับเพลงที่จังหวะคงที่</span></button>
+  ${lastSong?`<button class="cardP rL" id="mLast"><span class="e">🔁</span><span class="nm">เล่นเพลงล่าสุดอีกครั้ง</span><span class="ds">${esc(lastSong.name)}</span><span class="rr">${DIFFS[lastSong.lv].n}</span></button>`:''}
+ </div><input type="file" id="fileIn" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac" style="display:none">
+ <div class="btnRow"><button class="btn ghost" id="cls">ปิด</button></div>`);
+ $('cls').onclick=closeOv;
+ $('mGen').onclick=()=>{closeOv();startGen()};
+ $('mFile').onclick=()=>{audioInit();$('fileIn').click()};
+ $('fileIn').onchange=e=>{const f=e.target.files[0];if(f)loadFile(f)};
+ $('mYt').onclick=()=>{audioInit();askYT()};
+ if(lastSong)$('mLast').onclick=()=>{audioInit();lastSong.kind==='file'?songFlow(lastSong):ytFlow(lastSong.id,lastSong.lv)};
+}
+async function loadFile(f){
+ audioInit();if(!AC)return alert('เบราว์เซอร์นี้เล่นเสียงไม่ได้');
+ showOv(`<h2>🎧 กำลังฟังเพลง...</h2><p class="dim">${esc(f.name)}</p><div class="spin"></div><p id="anP" class="mono">0%</p>`);
+ try{
+  const ab=await f.arrayBuffer();
+  const buf=await new Promise((res,rej)=>{const p=AC.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej)});
+  if(buf.duration<20)throw new Error('short');
+  const an=await analyzeBuffer(buf,p=>{const e=$('anP');if(e)e.textContent=Math.round(p*100)+'%'});
+  const name=f.name.replace(/\.[^.]+$/,'');
+  chooseDiff(`🎵 ${esc(name)}`,lv=>{lastSong={kind:'file',name,buf,an,lv,key:'f:'+name+':'+Math.round(buf.duration)};songFlow(lastSong)});
+  const p=$('ov').querySelector('.dim');if(p)p.textContent=`พบจังหวะประมาณ ${Math.round(an.bpm)} BPM · ${an.onsets.length} จุดเสียง · ${Math.floor(buf.duration/60)}:${String(Math.floor(buf.duration%60)).padStart(2,'0')} นาที — เลือกความยาก`;
+ }catch(e){
+  showOv(`<h2>อ่านไฟล์นี้ไม่ได้</h2><p class="dim">${e.message==='short'?'เพลงสั้นเกินไป (ต้องยาวกว่า 20 วินาที)':'ลองไฟล์ MP3, M4A หรือ WAV แทน (บางเบราว์เซอร์อ่าน FLAC/OGG ไม่ได้)'}</p><div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`);$('cls').onclick=closeOv;
+ }
+}
+function songFlow(song){
+ ytKill();newRun('file');R.song=song;R.lv=song.lv;
+ prePicks(2,()=>{closeOv();startFileSong()});
+}
+function startFileSong(){
+ const s=R.song,D=DIFFS[s.lv];
+ enterRun();
+ R.ft=D.ft;R.dur=s.an.dur;R.T0=AC.currentTime+1.2;R.bpm=s.an.bpm;R.stepDur=60/s.an.bpm/2;
+ let notes=onsetChart(s.an,s.lv,R.T0);
+ makeGhosts(notes,Math.max(1,Math.floor(R.dur/22))+R.ghostN-1);
+ R.notes=addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base);
+ R.bossFrom=R.T0+R.dur*.75;
+ R.bossMax=Math.max(10,Math.round(R.notes.filter(n=>n.t>=R.bossFrom&&n.type!=='bomb').length*.85));
+ const src=AC.createBufferSource();src.buffer=s.buf;src.connect(songG);songG.gain.cancelScheduledValues(AC.currentTime);songG.gain.setValueAtTime(.95,AC.currentTime);src.start(R.T0);R.src=src;
+ R.state='play';R.shields=R.shieldPer;R.lastShieldT=R.T0;
+ $('prog').className='pbar';
+ bigPop(`🎵 ${s.name.slice(0,22)}`,'#35e6ff');
+}
+/* --- YouTube --- */
+function askYT(){
+ showOv(`<h2>▶️ YouTube</h2><p class="dim">วางลิงก์วิดีโอเพลง</p><input id="ytIn" class="tin" placeholder="https://youtu.be/..." autocomplete="off"><p class="dim" id="ytErr"></p><div class="btnRow"><button class="btn ghost" id="cls">ยกเลิก</button><button class="btn gold" id="ytGo">ต่อไป</button></div>`);
+ $('cls').onclick=closeOv;
+ $('ytGo').onclick=()=>{const id=ytParse($('ytIn').value);if(!id){$('ytErr').textContent='ลิงก์ไม่ถูกต้อง';return}chooseDiff('▶️ YouTube',lv=>ytFlow(id,lv))};
+}
+function ytFlow(id,lv){
+ newRun('yt');R.lv=lv;R.ytId=id;
+ prePicks(2,async()=>{
+  showOv(`<h2>กำลังโหลด YouTube...</h2><div class="spin"></div>`);
+  try{await loadYTApi();enterRun();await ytMake(id)}
+  catch(e){ytKill();show('home');showOv(`<h2>เปิดวิดีโอนี้ไม่ได้</h2><p class="dim">อาจไม่มีอินเทอร์เน็ต หรือเจ้าของวิดีโอไม่อนุญาตให้ฝัง (เพลงค่ายใหญ่บางเพลงเป็นแบบนี้) ลองวิดีโออื่น หรือใช้ไฟล์เพลงในเครื่อง</p><div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`);$('cls').onclick=closeOv;return}
+  closeOv();lastSong={kind:'yt',id,lv,name:(ytP.getVideoData&&ytP.getVideoData().title)||'YouTube '+id};
+  R.state='tempo';R.taps=[];
+  $('tempoUI').style.display='block';$('ytBox').style.pointerEvents='auto';$('ytBox').style.opacity='.9';
+  const saved=S.ytTempo[id];
+  $('bpmIn').value=saved?saved.bpm:'';$('tapN').textContent='0';$('bpmV').textContent=saved?saved.bpm:'–';
+  $('tGo').disabled=!saved;$('tGo').textContent=saved?'▶ เริ่ม (ใช้จังหวะที่บันทึกไว้)':'▶ เริ่มเกม';
+  try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}
+ });
+}
+function tempoCalc(){
+ const taps=R.taps,manual=parseFloat($('bpmIn').value);
+ let period=null;
+ if(manual>=50&&manual<=250)period=60/manual;
+ else if(taps.length>=8){
+  const n=taps.length;let sx=0,sy=0,sxx=0,sxy=0;for(let i=0;i<n;i++){sx+=i;sy+=taps[i];sxx+=i*i;sxy+=i*taps[i]}
+  period=(n*sxy-sx*sy)/(n*sxx-sx*sx);let bpm=60/period;if(Math.abs(bpm-Math.round(bpm))<.5)bpm=Math.round(bpm);period=60/bpm;
+ }
+ if(!period||taps.length<4)return null;
+ let cx=0,cy=0;taps.forEach(t=>{const a=2*Math.PI*t/period;cx+=Math.cos(a);cy+=Math.sin(a)});
+ const phase=((Math.atan2(cy,cx)/(2*Math.PI))*period+period)%period;
+ return{bpm:Math.round(60/period*10)/10,phase};
+}
+$('tapTempo').addEventListener('pointerdown',e=>{
+ e.preventDefault();e.stopPropagation();if(!R||R.state!=='tempo')return;
+ if(!ytBase.playing){$('bpmV').textContent='เปิดวิดีโอก่อน';return}
+ const t=ytNow();if(R.taps.length&&t-R.taps[R.taps.length-1]>2.5)R.taps=[];
+ R.taps.push(t);if(AC)osc('sine',1320,AC.currentTime,.05,.05,sfxG);
+ $('tapN').textContent=R.taps.length;const c=tempoCalc();
+ $('bpmV').textContent=c?c.bpm:'…';$('tGo').disabled=!c;$('tGo').textContent='▶ เริ่มเกม';
+});
+$('bpmIn').addEventListener('input',()=>{if(!R||R.state!=='tempo')return;const c=tempoCalc();$('bpmV').textContent=c?c.bpm:'…';$('tGo').disabled=!c&&!S.ytTempo[R.ytId]});
+$('tReset').onclick=()=>{if(!R)return;R.taps=[];$('tapN').textContent='0';$('bpmV').textContent='–';try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}};
+$('tGo').onclick=()=>{
+ if(!R||R.state!=='tempo')return;
+ const c=tempoCalc()||S.ytTempo[R.ytId];if(!c)return;
+ S.ytTempo[R.ytId]=c;save();
+ startYTSong(c);
+};
+function startYTSong(c){
+ const D=DIFFS[R.lv],period=60/c.bpm,sd=period/2;
+ $('tempoUI').style.display='none';$('ytBox').style.pointerEvents='none';$('ytBox').style.opacity='.38';
+ ytDur=ytP.getDuration()||ytDur||180;R.dur=ytDur;R.T0=0;R.ft=D.ft;R.bpm=c.bpm;R.stepDur=sd;
+ let first=c.phase;while(first<3)first+=period;
+ const t0=first-Math.floor((first-3)/(period*4))*0;
+ const steps=Math.floor((R.dur-1.5-t0)/sd);
+ let notes=gridChart(t0,sd,steps,t=>clamp(D.base+(t/R.dur)*.25+(t/R.dur>.75?.15:0),0,1),0);
+ // thin by difficulty min-gap
+ const kept=[];for(const n of notes){const lastK=kept[kept.length-1];if(!lastK||n.t-lastK.t>=D.gap*.95)kept.push(n)}
+ notes=kept;makeGhosts(notes,Math.max(1,Math.floor(R.dur/22))+R.ghostN-1);
+ R.notes=addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base);
+ R.bossFrom=R.dur*.75;R.bossMax=Math.max(10,Math.round(R.notes.filter(n=>n.t>=R.bossFrom&&n.type!=='bomb').length*.85));
+ R.shields=R.shieldPer;R.lastShieldT=0;
+ ytEnded=false;try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}
+ R.state='play';bigPop('▶️ เริ่ม!','#35e6ff');
+}
+
+/* ================= SCHEDULER (gen mode music) ================= */
+function schedTick(){
+ if(!R||R.mode!=='gen'||R.state!=='play'||paused||!AC)return;
+ const ahead=AC.currentTime+.15;
+ while(R.nextStep<64&&R.T0+R.nextStep*R.stepDur<ahead){musicStep(R.nextStep,R.T0+R.nextStep*R.stepDur);R.nextStep++}
+ if(R.nextStep>=64&&R.boss&&R.bossHP>0){
+  R.T0+=64*R.stepDur;R.bpm+=3;R.stepDur=60/R.bpm/2;R.countIn=false;R.nextStep=0;
+  const diff=Math.min(1,(R.depth-1)*.3+.35);
+  let n=gridChart(R.T0,R.stepDur,64,()=>diff,0);makeGhosts(n,R.ghostN);
+  R.notes=R.notes.filter(x=>!x.j).concat(addBombsAndExtras(n,diff,.35+.15*diff,.05+.25*diff));
+  R.verseEnd=R.T0+64*R.stepDur;
+ }
+}
+setInterval(schedTick,25);
+
+/* ================= JUDGEMENT ================= */
+const W1=()=>.05*R.win,W2=()=>.11*R.win;
+function missDmg(){
+ if(R.mode==='gen')return 16+4*(R.depth-1);
+ const p=R.dur?clamp((clk()-R.T0)/R.dur,0,1):0;return DIFFS[R.lv].dm+6*p;
+}
+function tap(lane){
+ if(!R||R.state!=='play'||paused)return;
+ laneFlash[lane]=1;
+ const now=clk(),w1=W1(),w2=W2();
+ let best=null,bd=1e9;
+ for(const n of R.notes){if(n.j)continue;if(n.t-now>.3)break;if(n.lane!==lane)continue;const d=Math.abs(n.t-now);if(d<bd){bd=d;best=n}}
+ if(best&&bd<=w2){
+  if(best.type==='bomb'){best.j=3;burst(LX(lane),HY(),'255,77,115',26);pop('✖ โดนกับดัก',LX(lane),HY()-80,'#ff4d73',18);hurt(28,true);return}
+  return judgeHit(best,bd<=w1);
+ }
+ if(best&&best.type!=='bomb'&&bd<=.2&&best.t>now){best.j=5;R.miss++;pop('เร็วไป',LX(lane),HY()-80,'#ff8a9e',15);hurt(missDmg()*.6,false);return}
+ // empty tap in a lane
+ R.combo=0;onCombo();R.hp-=3*R.dmgMul;pop('ว่าง',LX(lane),HY()-60,'#7d8ca3',13);if(R.hp<=0)hurt(0,true);
+}
+function judgeHit(n,perfect){
+ n.j=perfect?1:2;perfect?R.perf++:R.good++;
+ R.combo+=perfect?1+R.echo:1;R.maxCombo=Math.max(R.maxCombo,R.combo);
+ R.hp=Math.min(R.hpMax,R.hp+(perfect?.6+R.healP:.2));
+ const cm=1+Math.min(R.combo,R.comboCap)*.05,b=BANDS[S.band];
+ let hz=2*b.mult*(perfect?1.5:1)*cm*R.hzMul*(setDone(S.band)?1.25:1);
+ if(n.type==='gold')hz*=5;
+ R.hz+=hz;R.score+=Math.round((perfect?300:120)*(1+Math.min(R.combo,50)*.02)*(n.type==='gold'?2:1));
+ hitSound(n,perfect);buzz(perfect?6:4);
+ burst(LX(n.lane),HY(),n.type==='gold'||perfect?'255,208,74':'61,255,160',n.type==='gold'?40:perfect?22:12);
+ pop(n.type==='gold'?`★ +${fmt(hz)}`:perfect?'PERFECT':'GOOD',LX(n.lane),HY()-70,n.type==='gold'||perfect?'#ffd04a':'#3dffa0',n.type==='gold'?20:perfect?17:14);
+ hitFlash[n.lane]=1;
+ if(n.type==='ghost')capture(perfect,false);
+ if(R.boss){R.bossHP-=(perfect?1.5:1)*R.bossDmg*(n.type==='gold'?3:1);R.bossShake=1}
+ onCombo();
+}
+function onCombo(){
+ const t=tierOf(R.combo);
+ if(t>R.lastTier){bigPop(`🔥 ${TIERN[t]}!`,TIERC[t]);if(AC){const n=AC.currentTime;[0,7,12,19].forEach((k,i)=>osc('sine',mtof(BANDS[S.band].root+12+k),n+i*.05,.4,.05,sfxG))}if(S.set.shake)shake()}
+ if(t!==R.lastTier)wrapGlow(t);
+ R.lastTier=t;
+ const c=$('cNum');c.style.transform='scale(1.18)';setTimeout(()=>c.style.transform='',70);
+}
+function capture(perfect,force){
+ let rar=rollRarity(perfect);if(force&&rar==='C')rar='R';
+ const sp=pickSpirit(rar),isNew=!S.spirits[sp.id];
+ S.spirits[sp.id]=(S.spirits[sp.id]||0)+1;
+ const c={sp,isNew};R.pending.push(c);R.caught.push(c);
+ R.hz+=RBASE[rar]*BANDS[S.band].mult*R.hzMul;
+ const col={C:'#a5b3c8',R:'#3dffa0',S:'#35e6ff',M:'#ffd04a'}[rar];
+ pop(rar==='M'?'👑 MYTHIC!!':rar==='S'?'✨ SSR!':`👻 ${RNAME[rar]}`,Ws/2,Hs*.45,col,rar==='M'?26:rar==='S'?22:16);
+ if(rar==='S'||rar==='M'){fanfare(rar);buzz([25,30,25]);captureGlow=rar==='M'?'#ffd04a':'#35e6ff';captureT=1}
+ else if(AC){const t=AC.currentTime;const o=osc('sine',880,t,.5,.06,sfxG);if(o)o.frequency.exponentialRampToValueAtTime(1760,t+.4)}
+ save();
+}
+function odds(perfect){
+ const w=perfect?{C:40,R:38,S:18,M:4}:{C:56,R:32,S:10,M:2};
+ const L=(1+S.up.luck*.08)*(R?R.luck:1);w.S*=L;w.M*=L;
+ const t=w.C+w.R+w.S+w.M;for(const k in w)w[k]=w[k]/t*100;return w;
+}
+function rollRarity(perfect){
+ let r;
+ if(S.pM>=39)r='M';else if(S.pSSR>=9)r='S';
+ else{const w=odds(perfect);let x=Math.random()*100,a=0;r='C';for(const k of['M','S','R','C']){a+=w[k];if(x<a){r=k;break}}}
+ if(r==='M'){S.pM=0;S.pSSR=0}else{S.pM++;if(r==='S')S.pSSR=0;else S.pSSR++}
+ return r;
+}
+function pickSpirit(rar){
+ const pool=SP.filter(s=>s.r===rar&&S.bands[s.b]&&s.b<=S.band),cur=pool.filter(s=>s.b===S.band);
+ const use=(cur.length&&Math.random()<.8)?cur:pool;return use[Math.floor(Math.random()*use.length)];
+}
+function hurt(d,trap){
+ if(!trap&&R.shields>0){R.shields--;pop('🔔 ระฆังกันไว้',Ws/2,HY()-90,'#35e6ff',15);if(AC)osc('sine',1320,AC.currentTime,.5,.06,sfxG);return}
+ R.hp-=d*R.dmgMul;R.combo=0;onCombo();if(d>0){staticSound();buzz(25);if(S.set.shake)shake();missFlash=1}
+ if(R.hp<=0){
+  if(R.phoenix>0){R.phoenix--;R.hp=R.hpMax*.5;bigPop('🪶 ขนนกไฟคืนชีพ!','#ffd04a');fanfare('S');renderHeld();return}
+  R.hp=0;die();
+ }
+}
+function stopSong(fade){
+ if(R&&R.src&&AC){try{songG.gain.setTargetAtTime(0,AC.currentTime,fade?.25:.02);R.src.stop(AC.currentTime+(fade?1.2:.1))}catch(e){}R.src=null}
+ if(R&&R.mode==='yt'&&ytP){try{ytP.pauseVideo()}catch(e){}}
+}
+function die(){
+ if(R.state==='over')return;R.state='over';stopSong(true);
+ if(AC){const t=AC.currentTime;const o=osc('sawtooth',220,t,1.2,.08,sfxG);if(o)o.frequency.exponentialRampToValueAtTime(40,t+1.1);noise(t,1,.18,900,sfxG,'bandpass')}
+ setTimeout(showResult,1000);
+}
+function endVerse(){
+ R.state='inter';
+ if(AC){const t=AC.currentTime;[0,3,7,12].forEach((k,i)=>osc('triangle',mtof(BANDS[S.band].root+12+k),t+i*.08,.6,.06,sfxG))}
+ intermission('verse');
+}
+function bossReward(){
+ const b=BANDS[S.band];
+ const bonus=Math.round(RBASE.S*b.mult*2*R.depth*R.hzMul*(R.mode==='gen'?1:1+R.lv*.5));R.hz+=bonus;R.lastBonus=bonus;
+ S.bossWins++;capture(true,true);fanfare('M');buzz([30,40,30,40,60]);if(S.set.shake)shake();
+ return bonus;
+}
+function bossWin(){R.state='inter';bossReward();R.afterBoss=true;setTimeout(()=>intermission('boss'),700)}
+function songEnd(){
+ if(R.state==='over')return;R.state='over';R.cleared=true;
+ R.hz*=1.5;capture(true,true);fanfare('M');
+ setTimeout(showResult,900);
+}
+
+/* ================= INTERMISSION / CARDS ================= */
+function revealHTML(list){
+ return `<div class="flips">${list.map((c,i)=>`<div class="flip r-${c.sp.r}" id="fl${i}"><div class="fb">${c.sp.r==='M'?'👑':c.sp.r==='S'?'✨':'❔'}</div></div>`).join('')}</div>`;
+}
+function runFlips(list){
+ list.forEach((c,i)=>setTimeout(()=>{
+  const el=$('fl'+i);if(!el)return;el.classList.add('open');
+  el.innerHTML=`<div class="e">${c.sp.e}</div><div class="n">${c.sp.n}</div><div class="t">${RNAME[c.sp.r]}${c.isNew?' · <span class="gold">ใหม่!</span>':''}</div>`;
+  if(AC){const t=AC.currentTime;osc('triangle',mtof(BANDS[S.band].root+12+[0,3,7,12][Math.min(3,i)]),t,.3,.07,sfxG)}
+  if(c.sp.r==='S'||c.sp.r==='M')fanfare(c.sp.r);
+ },450+i*500));
+}
+function intermission(kind){
+ const list=R.pending;R.pending=[];
+ const b=BANDS[S.band],tot=R.perf+R.good+R.miss,acc=tot?Math.round((R.perf+R.good)/tot*100):100;
+ let h=kind==='boss'
+  ?`<h2 class="gold">🏆 ปราบ${b.boss.n}!</h2><p>+${fmt(R.lastBonus)} Hz · ต่อไป ชั้น ${R.depth+1} (เร็วขึ้น โหดขึ้น)</p>`
+  :`<h2>ท่อน ${R.verse}/3 ผ่าน!</h2><p class="dim">คอมโบสูงสุด ${R.maxCombo} · แม่นยำ ${acc}% · HP ${Math.ceil(R.hp)}/${R.hpMax}</p>`;
+ if(kind==='verse'&&R.verse===3)h+=`<p class="red">ท่อนถัดไป: ${b.boss.e} ${b.boss.n}</p>`;
+ if(list.length)h+=`<h4>👻 วิญญาณที่จับได้</h4>`+revealHTML(list);
+ h+=`<h4>เลือกพลัง 1 ใบ</h4><div id="pickArea"></div>`;
+ showOv(h);renderPick(drawCards(3),afterGenPick);runFlips(list);
+}
+function renderPick(ch,next){
+ $('pickArea').innerHTML=`<div class="pick">${ch.map((c,i)=>`<button class="cardP r${c.r}" data-ci="${i}"><span class="e">${c.e}</span><span class="nm">${c.n}</span><span class="ds">${c.d}</span><span class="rr">${{C:'ธรรมดา',R:'หายาก',L:'ตำนาน'}[c.r]}${R.cards[c.id]?` · มีแล้ว ×${R.cards[c.id]}`:''}</span></button>`).join('')}</div>${R.rerolls>0?`<div style="text-align:center;margin-top:8px"><button class="btn ghost" id="rr">🎲 สุ่มใหม่ (เหลือ ${R.rerolls})</button></div>`:''}`;
+ document.querySelectorAll('[data-ci]').forEach(el=>el.onclick=()=>{const c=ch[+el.dataset.ci];c.f(R);R.cards[c.id]=(R.cards[c.id]||0)+1;
+  if(AC){const t=AC.currentTime;osc('square',660,t,.08,.04,sfxG);osc('square',990,t+.07,.12,.04,sfxG)}renderHeld();next()});
+ const rr=$('rr');if(rr)rr.onclick=()=>{R.rerolls--;renderPick(drawCards(3),next)};
+}
+function afterGenPick(){
+ closeOv();
+ if(R.afterBoss){R.afterBoss=false;R.depth++;R.verse=1;R.boss=false;startVerse();return}
+ if(R.verse>=3){R.verse=4;R.boss=true;R.bossMax=R.bossHP=Math.round(40*(1+.3*(R.depth-1)));startVerse();return}
+ R.verse++;startVerse();
+}
+function renderHeld(){
+ if(!R)return;
+ $('held').innerHTML=Object.entries(R.cards).map(([id,n])=>{const c=CARDS.find(x=>x.id===id);return `<span class="hc">${c.e}${n>1?'×'+n:''}</span>`}).join('');
+}
+
+/* ================= RESULT ================= */
+const sessStart=Date.now();let nextBreak=45;
+function showResult(){
+ if(!R)return;
+ dailyCheck();
+ const bonus=S.dailyRuns<3;if(bonus)S.dailyRuns++;
+ const earned=Math.round(R.hz*(bonus?2:1));S.hz+=earned;S.runs++;
+ const tot=R.perf+R.good+R.miss,acc=tot?(R.perf+R.good*.6)/tot:0,accP=tot?Math.round((R.perf+R.good)/tot*100):0;
+ const rec=[];
+ if(R.maxCombo>S.best.combo){if(S.best.combo)rec.push(`คอมโบ ${R.maxCombo}`);S.best.combo=R.maxCombo}
+ if(earned>S.best.hz){if(S.best.hz)rec.push('Hz ต่อรอบ');S.best.hz=earned}
+ let head;
+ if(R.mode==='gen'){
+  const reach=(R.depth-1)*4+Math.min(R.verse,4);
+  if(reach>S.best.reach){if(S.best.reach)rec.push('ไปได้ไกลที่สุด');S.best.reach=reach}
+  head=`<h2>📻 สัญญาณขาดหาย</h2><div class="bigNum mono">+${fmt(earned)} Hz</div>${bonus?`<p class="gold">✨ โบนัสวันนี้ ×2 (รอบที่ ${S.dailyRuns}/3)</p>`:''}<p>ชั้น ${R.depth} · ${R.boss?'สู้บอส':`ท่อน ${R.verse}/3`} · คอมโบสูงสุด ${R.maxCombo} · แม่นยำ ${accP}%</p>`;
+ }else{
+  const g=!R.cleared?'F':acc>=.95?'S':acc>=.88?'A':acc>=.78?'B':acc>=.65?'C':'D';
+  const gc={S:'#ffd04a',A:'#3dffa0',B:'#35e6ff',C:'#b48cff',D:'#7d8ca3',F:'#ff4d73'}[g];
+  const key=(R.mode==='file'?R.song.key:'yt:'+R.ytId)+':'+R.lv,old=S.songs[key];
+  const isBest=!old||R.score>old.score;
+  if(isBest)S.songs[key]={score:R.score,g,name:lastSong?lastSong.name:''};
+  if(isBest&&old)rec.push(`คะแนนเพลงนี้ (เดิม ${fmt(old.score)})`);
+  const prog=R.dur?Math.round(clamp((clk()-R.T0)/R.dur,0,1)*100):0;
+  head=`<h2>${R.cleared?'🎉 จบเพลง!':'📻 สัญญาณขาดหาย'}</h2><div class="grade" style="color:${gc}">${g}</div>
+   <p class="mono" style="font-size:22px">${fmt(R.score)}</p><p class="dim">${esc(lastSong?lastSong.name:'')} · ${DIFFS[R.lv].n}${R.cleared?'':` · ไปได้ ${prog}%`}${old&&!isBest?` · สถิติ ${fmt(old.score)} (${old.g})`:''}</p>
+   <p>คอมโบสูงสุด ${R.maxCombo} · แม่นยำ ${accP}% · <b class="gold">+${fmt(earned)} Hz</b>${bonus?' (โบนัส ×2)':''}</p>`;
+ }
+ save();
+ const list=R.pending;R.pending=[];
+ const news=R.caught.filter(c=>c.isNew);
+ const mins=Math.floor((Date.now()-sessStart)/60000);
+ let brk='';
+ if(S.set.breaks&&mins>=nextBreak){nextBreak=mins+45;brk=`<p class="dim" style="margin-top:10px">🌙 เล่นมา ${mins} นาทีแล้ว พักสายตาสักนิดไหม? ทุกอย่างบันทึกไว้ครบ</p>`}
+ let h=head+rec.map(r=>`<p class="gold">🏅 สถิติใหม่: ${r}</p>`).join('');
+ if(list.length)h+=`<h4>👻 วิญญาณที่จับได้</h4>`+revealHTML(list);
+ if(news.length)h+=`<h4>📼 บันทึกเสียงใหม่</h4>`+news.map(c=>`<div class="log">${c.sp.e} <b>#${c.sp.id}</b> ${STORY[c.sp.id]}</div>`).join('');
+ h+=`<p class="dim" style="margin-top:10px">🧭 ${nextGoal()}</p>${brk}
+  <div class="btnRow"><button class="btn ghost" id="toHome">🏠 ห้อง</button><button class="big" id="again">▶ ${R.mode==='gen'?'อีกรอบ':'เล่นเพลงนี้อีกรอบ'}</button></div>`;
+ showOv(h);runFlips(list);
+ const mode=R.mode;
+ $('again').onclick=()=>{closeOv();if(mode==='gen')startGen();else if(mode==='file')songFlow(lastSong);else ytFlow(lastSong.id,lastSong.lv)};
+ $('toHome').onclick=()=>{closeOv();ytKill();R=null;show('home');renderHome()};
+ checkFinale();
+}
+function nextGoal(){
+ const g=[];
+ const lb=S.bands.findIndex(o=>!o);
+ if(lb>0)g.push({p:S.hz/BANDS[lb].cost,t:S.hz>=BANDS[lb].cost?`ปลดล็อกคลื่น ${BANDS[lb].fm} ได้แล้ว!`:`อีก ${fmt(BANDS[lb].cost-S.hz)} Hz ปลดล็อกคลื่น ${BANDS[lb].fm} ${BANDS[lb].name}`});
+ let bu=null;for(const u of UPS){if(S.up[u.k]>=u.max)continue;const c=ucost(u);if(!bu||c<bu.c)bu={u,c}}
+ if(bu)g.push({p:S.hz/bu.c,t:S.hz>=bu.c?`อัปเกรด "${bu.u.n}" ได้แล้ว!`:`อีก ${fmt(bu.c-S.hz)} Hz อัปเกรด "${bu.u.n}"`});
+ const ri=ROOMITEMS.find(x=>owned()<x.n);
+ if(ri)g.push({p:owned()/ri.n,t:`จับวิญญาณใหม่อีก ${ri.n-owned()} ตัว ห้องจะมี ${ri.t}`});
+ g.sort((a,b)=>b.p-a.p);return g.length?g[0].t:'คุณเก็บครบทุกอย่างแล้ว!';
+}
+function checkFinale(){
+ if(owned()<SP.length||S.finale)return;
+ S.finale=true;save();
+ setTimeout(()=>{showOv(`<h2 class="gold">ถอดรหัสครบ 21 บันทึก</h2><p style="line-height:1.7">เสียงทุกเสียงที่คุณเก็บมา ไม่ได้มาจากเครื่องส่งเลย<br>มันมาจากผู้ฟังทุกคนที่ไม่ยอมปิดวิทยุ<br>และไมค์ตัวสุดท้ายที่เปิดค้างไว้ ก็ไม่ใช่ของพี่ต้นอีกต่อไป</p><p class="gold">"ขอบคุณที่ยังฟังอยู่นะ... ผู้ประกาศคนใหม่"</p><div class="btnRow"><button class="big" id="fin">รับไมค์</button></div>`);$('fin').onclick=()=>{closeOv();ytKill();R=null;show('home');renderHome()}},300);
+}
+
+/* ================= OVERLAY / SCREENS ================= */
+function showOv(h){$('ov').innerHTML=`<div class="box">${h}</div>`;$('ov').classList.add('on')}
+function closeOv(){$('ov').classList.remove('on')}
+const ovOn=()=>$('ov').classList.contains('on');
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));requestAnimationFrame(resizeAll)}
+function shake(){$('app').animate([{transform:'translate(0,0)'},{transform:'translate(-3px,2px)'},{transform:'translate(3px,-2px)'},{transform:'translate(0,0)'}],{duration:220})}
+function wrapGlow(t){const w=$('scopeWrap'),c=TIERC[t];w.style.boxShadow=`0 0 ${10+t*12}px ${c}55`;w.style.borderColor=c+'aa'}
+
+function pause(){
+ if(!R||R.state!=='play'||paused)return;
+ paused=true;
+ if(R.mode==='yt'){try{ytP.pauseVideo()}catch(e){}}else if(AC)AC.suspend();
+ showOv(`<h2>⏸ หยุดชั่วคราว</h2><p class="dim">Hz ที่ได้ในรอบนี้ ${fmt(R.hz)} ไม่หายไปไหน</p><div class="btnRow"><button class="btn ghost" id="quit">จบรอบ (เก็บ Hz)</button><button class="big" id="res">▶ เล่นต่อ</button></div>`);
+ $('res').onclick=resume;
+ $('quit').onclick=()=>{closeOv();paused=false;if(AC)AC.resume();stopSong(false);R.state='over';showResult()};
+}
+function resume(){
+ closeOv();let n=3;
+ const tick=()=>{if(!R)return;if(n>0){bigPop(String(n),'#35e6ff');n--;setTimeout(tick,500)}else{paused=false;if(R.mode==='yt'){try{ytP.playVideo()}catch(e){}}else if(AC)AC.resume()}};
+ tick();
+}
+$('pauseBtn').onclick=pause;
+document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();save()}});
+
+/* ================= HOME ================= */
+function renderHome(){
+ dailyCheck();
+ $('stn').textContent=S.station?`📻 สถานี ${S.station} · ${BANDS[S.band].fm} FM`:`${BANDS[S.band].fm} FM`;
+ $('hHz').textContent=fmt(S.hz);
+ $('bandRow').innerHTML=BANDS.map((b,i)=>`<button class="chip ${S.band===i?'on':''} ${S.bands[i]?'':'lock'}" data-b="${i}"><b>${b.fm}</b>${S.bands[i]?`${b.name} · x${b.mult}`:`🔒 ${fmt(b.cost)} Hz`}</button>`).join('');
+ document.querySelectorAll('[data-b]').forEach(el=>el.onclick=()=>{
+  const i=+el.dataset.b;
+  if(!S.bands[i]){
+   if(S.hz<BANDS[i].cost){$('bestRow').textContent=`ต้องใช้ ${fmt(BANDS[i].cost)} Hz (ขาดอีก ${fmt(BANDS[i].cost-S.hz)})`;return}
+   S.hz-=BANDS[i].cost;S.bands[i]=true;audioInit();fanfare('S');
+  }
+  S.band=i;save();renderHome();
+ });
+ const r=S.best.reach;
+ $('bestRow').textContent=r?`🏅 สถานีผีไกลสุด ชั้น ${Math.ceil(r/4)} · คอมโบสูงสุด ${S.best.combo} · ${S.runs} รอบ`:'แตะตามจังหวะ 3 เลน จับวิญญาณ ไปให้ลึกที่สุด';
+ const left=3-S.dailyRuns;
+ $('startSub').textContent=left>0?`✨ โบนัสวันนี้ Hz ×2 เหลือ ${left} รอบ`:`คลื่น ${BANDS[S.band].fm} · รางวัล x${BANDS[S.band].mult}`;
+ $('dUp').style.display=UPS.some(u=>S.up[u.k]<u.max&&S.hz>=ucost(u))?'block':'none';
+ const ri=ROOMITEMS.find(x=>owned()<x.n);
+ $('roomCap').textContent=`👻 ผีในห้อง ${owned()}/21`+(ri?` · ต่อไป: ${ri.t} (อีก ${ri.n-owned()} ตัว)`:' · ห้องสมบูรณ์')+(S.bossWins?'':' · ปราบบอสครั้งแรกได้ 📺');
+}
+$('startBtn').onclick=()=>{audioInit();openModes()};
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{const p=b.dataset.p;if(p==='codex')openCodex(S.band);if(p==='up')openUp();if(p==='info')openInfo()});
+
+function openCodex(band){
+ const nb=SP.filter(s=>s.b===band&&S.spirits[s.id]).length;
+ let h=`<h2>📖 สมุดวิญญาณ ${owned()}/21</h2><div class="tabs">${BANDS.map((b,i)=>`<button class="chip ${i===band?'on':''}" data-cb="${i}"><b>${b.fm}</b></button>`).join('')}</div>
+ <p class="${setDone(band)?'gold':'dim'}" style="text-align:left">${setDone(band)?'✅ ครบชุด · Hz ในคลื่นนี้ +25% ถาวร':`🎁 เก็บครบชุด ${nb}/7 → Hz ในคลื่นนี้ +25% ถาวร`}</p><div class="cgrid">`;
+ for(const sp of SP.filter(s=>s.b===band)){
+  const c=S.spirits[sp.id];
+  h+=c?`<div class="card r-${sp.r}"><div class="e">${sp.e}</div><div class="n">${sp.n}</div><div class="l">${RNAME[sp.r]} · จับได้ ${c} ครั้ง</div><div class="l" style="color:#c9d4e4">📼 ${STORY[sp.id]}</div></div>`
+      :`<div class="card unk"><div class="e">❔</div><div class="n">???</div><div class="l">${RNAME[sp.r]} · 📼 สัญญาณขาดหาย</div></div>`;
+ }
+ const songs=Object.values(S.songs);
+ if(songs.length)h+=`</div><h4>🎵 สถิติเพลงของคุณ</h4>`+Object.entries(S.songs).slice(-12).map(([k,v])=>`<div class="row"><span>${esc(v.name||'เพลง')} <span class="dim">${DIFFS[+k.split(':').pop()]?.n||''}</span></span><b>${v.g} · ${fmt(v.score)}</b></div>`).join('')+'<div>';
+ h+=`</div><div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`;
+ showOv(h);
+ document.querySelectorAll('[data-cb]').forEach(el=>el.onclick=()=>openCodex(+el.dataset.cb));
+ $('cls').onclick=closeOv;
+}
+function openUp(){
+ let h=`<h2>⚡ อัปเกรดถาวร</h2><p class="dim">มี ${fmt(S.hz)} Hz · ราคาจริง ไม่มีตัวล่อ</p>`;
+ for(const u of UPS){const l=S.up[u.k],mx=l>=u.max,c=ucost(u);
+  h+=`<div class="row"><div><b>${u.n}</b> <span class="mono dim">Lv.${l}/${u.max}</span><div class="d">${mx?'สูงสุดแล้ว':u.d(l)}</div></div><button class="btn" data-u="${u.k}" ${mx||S.hz<c?'disabled':''}>${mx?'MAX':fmt(c)}</button></div>`}
+ h+=`<div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`;
+ showOv(h);
+ document.querySelectorAll('[data-u]').forEach(el=>el.onclick=()=>{const u=UPS.find(x=>x.k===el.dataset.u),c=ucost(u);if(S.hz<c||S.up[u.k]>=u.max)return;S.hz-=c;S.up[u.k]++;audioInit();if(AC){const t=AC.currentTime;osc('square',660,t,.08,.04,sfxG);osc('square',990,t+.07,.12,.04,sfxG)}save();renderHome();openUp()});
+ $('cls').onclick=closeOv;
+}
+function openInfo(){
+ const row=p=>{const w=odds(p);return `<tr><td>${p?'PERFECT':'GOOD'}</td><td>${w.C.toFixed(1)}%</td><td>${w.R.toFixed(1)}%</td><td>${w.S.toFixed(1)}%</td><td>${w.M.toFixed(1)}%</td></tr>`};
+ const P=[
+  ['Flow (Csikszentmihalyi)','โน้ตมาตามจังหวะเพลง ความยากเพิ่มทีละขั้น ยากพอดีมือจนลืมตัว'],
+  ['ดนตรีเป็นรางวัล','โหมดสถานีผี: แตะโดนคือคุณเล่นทำนอง ยิ่งคอมโบสูง วงดนตรียิ่งเต็ม'],
+  ['ความเป็นเจ้าของ','เล่นกับเพลงที่คุณรักเอง ทุกเพลงกลายเป็นด่านใหม่'],
+  ['"อีกรอบเดียว" + Personal best','รอบสั้น แพ้แล้วเริ่มใหม่ทันที มีเกรดและสถิติต่อเพลง'],
+  ['Autonomy (SDT)','เลือกพลัง 1 ใน 3 สร้างบิลด์ของตัวเอง'],
+  ['Variable-ratio reinforcement','โน้ตทอง วิญญาณ และความหายากสุ่มจริง'],
+  ['Anticipation','การ์ดวิญญาณคว่ำโชว์สีก่อน แล้วค่อยพลิกเปิด'],
+  ['Visible progress','ห้องวิทยุมีผีที่จับได้ลอยอยู่ และมีของใหม่ปรากฏตามความคืบหน้า'],
+  ['Curiosity gap','บันทึกเสียงทีละชิ้นจนเฉลยปริศนาสถานี']
+ ];
+ let h=`<h2>ℹ️ ข้อมูล</h2>
+ <h4>วิธีเล่น</h4><p class="dim" style="text-align:left">แตะ ซ้าย/กลาง/ขวา ของจอให้ตรงเลน (คีย์บอร์ด: A S D หรือ J K L หรือ ← ↓ →) · 🟠 โน้ตส้มตกเร็ว · ↔ โน้ตลูกศรจะเปลี่ยนเลนกลางทาง · 🟣 โน้ตม่วงล่องหนก่อนถึง · ✖ ห้ามแตะ · แตะเลนว่างหรือแตะเร็วไปจะเสียเลือด</p>
+ <h4>อัตราจับวิญญาณจริง (โน้ต 👻)</h4><table><tr><th></th><th>C</th><th>R</th><th>SSR</th><th>MYTH</th></tr>${row(true)}${row(false)}</table>
+ <p class="dim" style="text-align:left">การันตี SSR ทุก 10 ตัว (ตอนนี้ ${S.pSSR}/10) · MYTHIC ทุก 40 ตัว (ตอนนี้ ${S.pM}/40) · ปราบบอส/จบเพลงได้ RARE ขึ้นไปเสมอ · Hz ที่ได้เก็บไว้ทั้งหมดแม้แพ้</p>
+ <h4>🧠 หลักจิตวิทยาที่ใช้ (เปิดเผยทั้งหมด)</h4>${P.map(([a,b])=>`<div class="psy"><b>${a}</b><br>${b}</div>`).join('')}
+ <h4>สถานีของคุณ</h4><input id="stnIn" class="tin" maxlength="16" value="${esc(S.station)}" placeholder="ตั้งชื่อสถานี">
+ <h4>ตั้งค่า</h4>
+ ${[['sound','เสียง'],['haptic','สั่น'],['shake','จอสั่น'],['showTime','แสดงเวลาที่เล่นไปแล้ว'],['breaks','ชวนพักทุก 45 นาที (ตอนจบรอบ)']].map(([k,n])=>`<label class="sw"><span>${n}</span><input type="checkbox" data-s="${k}" ${S.set[k]?'checked':''}></label>`).join('')}
+ <label class="sw" style="flex-wrap:wrap"><span>ปรับดีเลย์เสียง <b id="offV">${S.set.offset}</b> ms</span><input type="range" min="-200" max="200" step="10" value="${S.set.offset}" id="offIn" style="width:100%"></label>
+ <p class="dim" style="text-align:left">ถ้ากดตรงจังหวะแล้วได้ GOOD หรือ "เร็วไป" บ่อย ให้เลื่อนค่านี้ (หูฟังบลูทูธมักต้องใช้ค่าบวก) · เกมนี้ไม่มีแสงวาบเร็ว</p>
+ <div class="btnRow"><button class="btn ghost" id="rst">รีเซ็ตเกม</button><button class="btn" id="cls">ปิด</button></div>`;
+ showOv(h);
+ document.querySelectorAll('[data-s]').forEach(el=>el.onchange=()=>{S.set[el.dataset.s]=el.checked;if(master)master.gain.value=S.set.sound?.9:0;save()});
+ $('offIn').oninput=()=>{S.set.offset=+$('offIn').value;$('offV').textContent=S.set.offset;save()};
+ $('stnIn').onchange=()=>{S.station=$('stnIn').value.trim().slice(0,16);save();renderHome()};
+ $('rst').onclick=()=>{if(confirm('ลบความคืบหน้าทั้งหมด?')){localStorage.removeItem('spiritbox_v3');localStorage.removeItem('spiritbox_v2');location.reload()}};
+ $('cls').onclick=closeOv;
+}
+
+/* ================= CANVAS ================= */
+const roomC=$('room'),rx=roomC.getContext('2d'),scopeC=$('scope'),sx=scopeC.getContext('2d');
+let Wr=0,Hr=0,Ws=0,Hs=0;
+function fit(cv,ctx){const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);if(!r.width)return[0,0];cv.width=r.width*d;cv.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);return[r.width,r.height]}
+function resizeAll(){[Wr,Hr]=fit(roomC,rx);[Ws,Hs]=fit(scopeC,sx)}
+window.addEventListener('resize',resizeAll);
+const LX=l=>Ws*(.18+.32*l),HY=()=>Hs*.85;
+let particles=[],pops=[],hitFlash=[0,0,0],laneFlash=[0,0,0],missFlash=0,captureGlow='',captureT=0;
+function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=40+Math.random()*170;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,c:col,z:1.5+Math.random()*2.5})}}
+function pop(t,x,y,c,s){pops.push({t,x,y,c,s,l:1})}
+function bigPop(t,c){pops.push({t,x:Ws/2,y:Hs*.3,c,s:24,l:1.5,big:1})}
+
+function drawRoom(ts){
+ const c=rx,w=Wr,h=Hr;if(!w)return;const b=BANDS[S.band],own=owned();
+ c.clearRect(0,0,w,h);
+ let g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#0c1526');g.addColorStop(1,'#05080f');c.fillStyle=g;c.fillRect(0,0,w,h);
+ c.fillStyle='#070b13';c.fillRect(0,h*.8,w,h*.2);
+ const wx=w*.07,wy=h*.08,ww=w*.3,wh=h*.36;
+ c.fillStyle='#0a1830';c.fillRect(wx,wy,ww,wh);
+ c.fillStyle='rgba(225,236,255,.85)';c.beginPath();c.arc(wx+ww*.7,wy+wh*.3,ww*.11,0,6.283);c.fill();
+ if(own>=15){c.fillStyle='rgba(0,0,0,.82)';c.beginPath();c.arc(wx+ww*.38,wy+wh*.62,ww*.12,0,6.283);c.fill();c.fillRect(wx+ww*.2,wy+wh*.74,ww*.36,wh*.26);
+  c.fillStyle=`rgba(180,140,255,${.35+.25*Math.sin(ts/900)})`;c.beginPath();c.arc(wx+ww*.34,wy+wh*.6,2,0,6.283);c.arc(wx+ww*.42,wy+wh*.6,2,0,6.283);c.fill()}
+ c.strokeStyle='#22324a';c.lineWidth=3;c.strokeRect(wx,wy,ww,wh);c.beginPath();c.moveTo(wx+ww/2,wy);c.lineTo(wx+ww/2,wy+wh);c.moveTo(wx,wy+wh/2);c.lineTo(wx+ww,wy+wh/2);c.stroke();
+ if(own>=10){[[.62,.1],[.78,.14],[.66,.3]].forEach(([fx,fy])=>{c.fillStyle='#1d1610';c.fillRect(w*fx,h*fy,w*.1,h*.12);c.fillStyle='#0d1018';c.fillRect(w*fx+3,h*fy+3,w*.1-6,h*.12-6);c.fillStyle='rgba(200,200,220,.12)';c.beginPath();c.arc(w*fx+w*.05,h*fy+h*.05,w*.018,0,6.283);c.fill()})}
+ c.fillStyle='#1c1510';c.fillRect(w*.16,h*.68,w*.68,h*.05);c.fillRect(w*.19,h*.73,w*.03,h*.1);c.fillRect(w*.78,h*.73,w*.03,h*.1);
+ const rcx=w*.5,rcy=h*.6,gl=c.createRadialGradient(rcx,rcy,5,rcx,rcy,w*.35);
+ gl.addColorStop(0,b.col+(own>=21?'55':'30'));gl.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=gl;c.fillRect(0,0,w,h);
+ if(own>=21){c.strokeStyle=`rgba(255,208,74,${.3+.15*Math.sin(ts/700)})`;c.lineWidth=2;c.beginPath();c.arc(rcx,rcy,w*.17,0,6.283);c.stroke()}
+ const rw=w*.24,rh=h*.15,rX=rcx-rw/2,rY=h*.68-rh;
+ c.strokeStyle='#8a8f99';c.lineWidth=2;c.beginPath();c.moveTo(rX+rw*.8,rY);c.lineTo(rX+rw*.95,rY-h*.12);c.stroke();
+ c.fillStyle='#4a321d';c.fillRect(rX,rY,rw,rh);
+ c.fillStyle='#2a1c10';for(let i=0;i<5;i++)c.fillRect(rX+rw*.08,rY+rh*(.18+i*.14),rw*.36,rh*.06);
+ c.fillStyle=b.col;c.globalAlpha=.55+.25*Math.sin(ts/600);c.fillRect(rX+rw*.52,rY+rh*.2,rw*.4,rh*.22);c.globalAlpha=1;
+ c.fillStyle='#c9b48a';c.beginPath();c.arc(rX+rw*.6,rY+rh*.7,rh*.12,0,6.283);c.arc(rX+rw*.84,rY+rh*.7,rh*.12,0,6.283);c.fill();
+ if(own>=5){[.24,.73].forEach((cx0,i)=>{const x=w*cx0,y=h*.68;c.fillStyle='#e8e0cc';c.fillRect(x-4,y-h*.08,8,h*.08);
+  const f=1+.08*Math.sin(ts/130+i*2);const fg=c.createRadialGradient(x,y-h*.09,1,x,y-h*.09,16*f);fg.addColorStop(0,'rgba(255,208,74,.9)');fg.addColorStop(1,'rgba(255,140,40,0)');c.fillStyle=fg;c.beginPath();c.arc(x,y-h*.09,16*f,0,6.283);c.fill()})}
+ if(S.bossWins>=1){const tx=w*.83,ty=h*.8,tw=w*.14,th=h*.13;c.fillStyle='#2a2a30';c.fillRect(tx-tw/2,ty-th,tw,th);c.fillStyle='#0d0f12';c.fillRect(tx-tw/2+4,ty-th+4,tw-8,th-8);
+  const sd=Math.floor(ts/140);for(let i=0;i<24;i++){const r1=Math.sin(sd*13.1+i*7.7)*.5+.5,r2=Math.sin(sd*5.3+i*3.1)*.5+.5;c.fillStyle=`rgba(200,210,230,${.06+.08*r1})`;c.fillRect(tx-tw/2+4+r1*(tw-12),ty-th+4+r2*(th-12),4,2)}}
+ c.textAlign='center';c.textBaseline='middle';
+ SP.filter(s=>S.spirits[s.id]).forEach(s=>{
+  const a=s.id*2.39+ts/14000*(1+(s.id%3)*.35),x=w*.5+Math.cos(a)*w*.38,y=h*.4+Math.sin(a*1.3)*h*.22+Math.sin(ts/800+s.id)*4;
+  if(s.r==='S'||s.r==='M'){c.shadowColor=s.r==='M'?'#ffd04a':'#35e6ff';c.shadowBlur=14}
+  c.globalAlpha=.9;c.font=`${s.r==='M'?34:s.r==='S'?30:26}px serif`;c.fillText(s.e,x,y);c.shadowBlur=0;c.globalAlpha=1;
+ });
+ c.textBaseline='alphabetic';
+}
+
+function noteX(n,frac){
+ if(n.type!=='sw')return LX(n.lane);
+ if(frac>=.6)return LX(n.from);if(frac<=.38)return LX(n.lane);
+ const k=(frac-.38)/.22,e=k*k*(3-2*k);return LX(n.lane)+(LX(n.from)-LX(n.lane))*e;
+}
+function drawNote(c,n,x,y,frac){
+ let a=1;if(n.type==='phantom'&&!R.eye)a=clamp((frac-.4)/.18,0,1);
+ if(a<=0)return;c.globalAlpha=a;
+ if(n.sp>1&&n.type!=='bomb'){c.strokeStyle='rgba(255,157,61,.45)';c.lineWidth=6;c.beginPath();c.moveTo(x,y-34);c.lineTo(x,y-8);c.stroke()}
+ if(n.type==='bomb'){c.fillStyle='#3a0a14';c.strokeStyle='#ff4d73';c.lineWidth=3;c.beginPath();c.arc(x,y,15,0,6.283);c.fill();c.stroke();c.beginPath();c.moveTo(x-6,y-6);c.lineTo(x+6,y+6);c.moveTo(x+6,y-6);c.lineTo(x-6,y+6);c.stroke()}
+ else if(n.type==='gold'){c.shadowColor='#ffd04a';c.shadowBlur=16;c.fillStyle='#ffd04a';c.beginPath();c.arc(x,y,16,0,6.283);c.fill();c.shadowBlur=0;c.fillStyle='#fff3c4';c.beginPath();c.arc(x,y,6,0,6.283);c.fill()}
+ else if(n.type==='ghost'){const g=c.createRadialGradient(x,y,2,x,y,30);g.addColorStop(0,'rgba(180,140,255,.7)');g.addColorStop(1,'rgba(180,140,255,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,30,0,6.283);c.fill();c.font='24px serif';c.textBaseline='middle';c.fillText('👻',x,y);c.textBaseline='alphabetic'}
+ else{
+  const col=n.type==='phantom'?'#b48cff':n.type==='sw'?'#3dffa0':n.sp>1?'#ff9d3d':'#35e6ff';
+  c.fillStyle='#04121a';c.strokeStyle=col;c.lineWidth=3;c.beginPath();c.arc(x,y,15,0,6.283);c.fill();c.stroke();
+  if(n.type==='sw'){
+   const dir=Math.sign(n.lane-n.from);c.fillStyle=col;c.beginPath();c.moveTo(x+dir*8,y);c.lineTo(x-dir*4,y-6);c.lineTo(x-dir*4,y+6);c.closePath();c.fill();
+   if(R.eye&&frac>.38){c.globalAlpha=a*.35;c.strokeStyle=col;c.setLineDash([4,4]);c.beginPath();c.arc(LX(n.lane),y,15,0,6.283);c.stroke();c.setLineDash([])}
+  }else{c.fillStyle=col;c.beginPath();c.arc(x,y,4.5,0,6.283);c.fill()}
+ }
+ c.globalAlpha=1;
+}
+function drawScope(ts,dt){
+ const c=sx,w=Ws,h=Hs;if(!w||!R)return;
+ c.clearRect(0,0,w,h);c.textAlign='center';
+ const b=BANDS[S.band],tier=tierOf(R.combo),col=TIERC[tier],now=clk(),hy=HY();
+ if(R.mode!=='yt'){c.strokeStyle='rgba(53,230,255,.05)';c.lineWidth=1;for(let y=0;y<h;y+=30){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}}
+ let pulse=0;if(R.stepDur){const bt=R.stepDur*2,ph=(((now-R.T0-(R.mode==='file'?0:0))%bt)+bt)%bt;pulse=Math.exp(-ph*7)}
+ if(R.state!=='play'||paused)pulse*=.3;
+ if(tier>0){const g=c.createRadialGradient(w/2,hy,10,w/2,hy,w*.8);g.addColorStop(0,col+'22');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,w,h)}
+ if(captureT>0){c.fillStyle=captureGlow;c.globalAlpha=captureT*.12;c.fillRect(0,0,w,h);c.globalAlpha=1;captureT=Math.max(0,captureT-dt*1.2)}
+ if(missFlash>0){c.fillStyle='#ff4d73';c.globalAlpha=missFlash*.1;c.fillRect(0,0,w,h);c.globalAlpha=1;missFlash=Math.max(0,missFlash-dt*3)}
+ // lanes
+ for(let l=0;l<3;l++){
+  const x=LX(l);
+  const lg=c.createLinearGradient(0,0,0,hy);lg.addColorStop(0,'rgba(53,230,255,0)');lg.addColorStop(1,`rgba(53,230,255,${.07+laneFlash[l]*.18})`);
+  c.fillStyle=lg;c.fillRect(x-Ws*.15,0,Ws*.3,hy+30);
+  laneFlash[l]=Math.max(0,laneFlash[l]-dt*6);
+  c.strokeStyle='rgba(53,230,255,.1)';c.lineWidth=1;c.beginPath();c.moveTo(x,0);c.lineTo(x,hy);c.stroke();
+ }
+ if(R.boss){const bs=R.bossShake;R.bossShake=Math.max(0,bs-dt*5);c.font='54px serif';c.textBaseline='middle';c.globalAlpha=.85;c.fillText(b.boss.e,w/2+(Math.random()-.5)*bs*10,h*.1+(Math.random()-.5)*bs*6);c.globalAlpha=1;c.textBaseline='alphabetic'}
+ // targets
+ c.strokeStyle=col;c.shadowColor=col;
+ for(let l=0;l<3;l++){c.shadowBlur=10+hitFlash[l]*16;c.lineWidth=3;c.beginPath();c.arc(LX(l),hy,22+3*pulse+hitFlash[l]*6,0,6.283);c.stroke();hitFlash[l]=Math.max(0,hitFlash[l]-dt*5)}
+ c.shadowBlur=0;
+ // notes
+ if(R.state==='play'||R.state==='inter'||R.state==='over'){
+  for(const n of R.notes){
+   if(n.j)continue;const d=n.t-now;const ft=R.ft/n.sp;if(d>ft+.1)continue;if(d<-.25)continue;
+   if(d>R.ft*1.0+.2&&n.sp===1)break;
+   const y=hy-(d/ft)*hy,frac=clamp((hy-y)/hy,0,1);
+   drawNote(c,n,noteX(n,frac),y,frac);
+  }
+ }
+ for(let i=particles.length-1;i>=0;i--){const q=particles[i];q.l-=dt*1.8;if(q.l<=0){particles.splice(i,1);continue}q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=150*dt;c.fillStyle=`rgba(${q.c},${q.l})`;c.fillRect(q.x,q.y,q.z,q.z)}
+ for(let i=pops.length-1;i>=0;i--){const q=pops[i];q.l-=dt*(q.big?.9:1.5);if(q.l<=0){pops.splice(i,1);continue}if(!q.big)q.y-=34*dt;c.globalAlpha=clamp(q.l,0,1);c.fillStyle=q.c;c.font=`700 ${q.s}px Kanit,sans-serif`;c.fillText(q.t,q.x,q.y)}
+ c.globalAlpha=1;
+ if(R.state==='tempo'){c.fillStyle='rgba(3,6,11,.4)';c.fillRect(0,0,w,h);c.fillStyle='#e6edf7';c.font='600 15px Kanit,sans-serif';c.fillText('▶️ ฟังเพลงแล้วแตะตามจังหวะ',w/2,h*.12)}
+}
+let hudT=0;
+function hud(){
+ if(!R)return;
+ $('hpFill').style.width=clamp(R.hp/R.hpMax*100,0,100)+'%';
+ $('hpTxt').textContent=`${Math.ceil(R.hp)}/${R.hpMax}`+(R.shields?` 🔔${R.shields}`:'');
+ $('runHz').textContent=fmt(R.hz);
+ $('cNum').textContent=R.combo;$('cNum').style.color=TIERC[tierOf(R.combo)];
+ $('cLbl').textContent=tierOf(R.combo)?TIERN[tierOf(R.combo)]:'COMBO';
+ $('cMul').textContent=R.combo?`Hz ×${(1+Math.min(R.combo,R.comboCap)*.05).toFixed(2)}`:'';
+ const b=BANDS[S.band];
+ if(R.boss){$('prog').className='pbar boss';$('depthTxt').innerHTML=`${R.mode==='gen'?`ชั้น ${R.depth} · `:''}${b.boss.e} <b>${Math.max(0,Math.ceil(R.bossHP))}/${R.bossMax}</b>`;$('progFill').style.width=clamp(R.bossHP/R.bossMax*100,0,100)+'%'}
+ else if(R.mode==='gen'){$('prog').className='pbar';$('depthTxt').innerHTML=`ชั้น <b>${R.depth}</b> · ท่อน ${R.verse}/3`;$('progFill').style.width=clamp((clk()-R.T0)/(64*R.stepDur)*100,0,100)+'%'}
+ else{$('prog').className='pbar';const p=R.dur?clamp((clk()-R.T0)/R.dur,0,1):0;$('depthTxt').innerHTML=`🎵 ${esc((lastSong&&lastSong.name)||'').slice(0,24)} · <b>${DIFFS[R.lv].n}</b>`;$('progFill').style.width=p*100+'%'}
+}
+
+let last=performance.now();
+function frame(ts){
+ const dt=Math.min(.05,(ts-last)/1000);last=ts;
+ if($('home').classList.contains('on'))drawRoom(ts);
+ if($('run').classList.contains('on')&&R){
+  if(R.state==='play'&&!paused&&(AC||R.mode==='yt')){
+   schedTick();
+   const now=clk(),w2=W2();
+   for(const n of R.notes){
+    if(n.j)continue;if(now-n.t<=w2)break;
+    if(n.type==='bomb'){n.j=4}
+    else{n.j=5;R.miss++;if(n.type==='ghost')pop('วิญญาณหลุดไป...',Ws/2,Hs*.45,'#7d8ca3',14);hurt(missDmg(),false);if(R.state!=='play')break}
+   }
+   if(R.state==='play'){
+    if(R.mode==='gen'){
+     if(R.boss){if(R.bossHP<=0)bossWin()}
+     else if(R.nextStep>=64&&now>R.verseEnd+.15&&R.notes.every(n=>n.j))endVerse();
+    }else{
+     if(R.shieldPer&&now-R.lastShieldT>30){R.lastShieldT=now;R.shields=Math.max(R.shields,R.shieldPer)}
+     if(!R.bossDone&&!R.boss&&now>=R.bossFrom){R.boss=true;R.bossHP=R.bossMax;bigPop(`${BANDS[S.band].boss.e} ท่อนสุดท้าย: ${BANDS[S.band].boss.n}`,'#ff4d73')}
+     if(R.boss&&R.bossHP<=0){R.boss=false;R.bossDone=true;const bo=bossReward();bigPop(`🏆 ปราบได้! +${fmt(bo)} Hz`,'#ffd04a')}
+     const ended=R.mode==='yt'?(ytEnded||now>R.dur-.3):now>R.T0+R.dur+.3;
+     if(ended&&R.notes.every(n=>n.j||n.t>now+5))songEnd();
+    }
+   }
+   if(R.notes.length>200)R.notes=R.notes.filter(n=>!n.j||now-n.t<1);
+  }
+  drawScope(ts,dt);
+  if(ts-hudT>60){hud();hudT=ts}
+ }
+ requestAnimationFrame(frame);
+}
+
+/* ================= INPUT ================= */
+$('run').addEventListener('pointerdown',e=>{
+ if(e.target.closest('button,input,#tempoUI'))return;
+ if(!R||R.state!=='play')return;
+ e.preventDefault();
+ const r=$('run').getBoundingClientRect(),lane=clamp(Math.floor((e.clientX-r.left)/r.width*3),0,2);
+ tap(lane);
+});
+const KEYMAP={KeyA:0,KeyS:1,KeyD:2,KeyJ:0,KeyK:1,KeyL:2,ArrowLeft:0,ArrowDown:1,ArrowRight:2};
+window.addEventListener('keydown',e=>{
+ if(e.repeat||e.target.tagName==='INPUT')return;
+ if($('run').classList.contains('on')&&!ovOn()&&e.code in KEYMAP){e.preventDefault();tap(KEYMAP[e.code])}
+ if(e.code==='Escape')pause();
+});
+setInterval(()=>{const m=Math.floor((Date.now()-sessStart)/60000);$('sess').textContent=S.set.showTime?`เล่นมาแล้ว ${m} นาที`:''},5000);
+
+/* ================= BOOT ================= */
+function boot(){
+ dailyCheck();resizeAll();renderHome();requestAnimationFrame(frame);
+ if(!S.station&&!S.runs){
+  if(!owned())S.spirits[1]=1;
+  showOv(`<h2>📻 เปิดสถานีของคุณ</h2><p>ตั้งชื่อสถานีวิทยุของคุณ</p><input id="stnFirst" class="tin" maxlength="16" placeholder="เช่น คลื่นตีสาม"><p class="gold">🎁 ของขวัญแรก: 📻 เสียงกระซิบข้างเสาไฟ</p><p class="dim">เปิดเสียงด้วยนะ เกมนี้เล่นตามจังหวะเพลง 🎧</p><div class="btnRow"><button class="big" id="go">เปิดสถานี</button></div>`);
+  $('go').onclick=()=>{S.station=($('stnFirst').value||'').trim().slice(0,16)||'ตีสาม FM';save();closeOv();renderHome()};
+ }
+}
+boot();
+</script>
+</body>
+</html>
