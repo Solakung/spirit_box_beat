@@ -109,6 +109,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:3px 4px;t
 .log{font-size:12px;line-height:1.55;text-align:left;padding:6px 0;border-bottom:1px solid #121c2c}
 .spin{width:40px;height:40px;border-radius:50%;border:4px solid #1b2a40;border-top-color:var(--cyan);margin:14px auto;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+.libItem{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin-bottom:6px}
+.libItem .nm{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-align:left}
+.libItem .nm small{display:block;color:var(--dim);font-size:10px}
+#calTap{font-size:22px;padding:34px;margin:10px 0}
 @media (prefers-reduced-motion:reduce){.flip .fb{animation:none}.box{animation:none}}
 </style>
 </head>
@@ -120,6 +124,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:3px 4px;t
     <div id="bandRow"></div>
     <div id="bestRow"></div>
     <button class="big" id="startBtn">▶ เริ่มออกอากาศ<small id="startSub"></small></button>
+    <button class="btn gold" id="updBtn" style="display:none;width:100%"></button>
     <div class="navRow"><button class="nav" data-p="codex">📖 สมุด</button><button class="nav" data-p="up">⚡ อัปเกรด<span class="dot" id="dUp"></span></button><button class="nav" data-p="info">ℹ️ ข้อมูล</button></div>
     <div id="foot"><span id="sess"></span><span>บันทึกไว้ในเครื่องคุณ</span></div>
   </div>
@@ -142,6 +147,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:3px 4px;t
 </div>
 
 <script>
+const GAME_VERSION='5.0.0'; // ← เปลี่ยนเลขนี้ทุกครั้งที่อัปโหลดไฟล์ใหม่ขึ้น GitHub
 /* ================= HELPERS ================= */
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -234,7 +240,7 @@ const tierOf=c=>c>=40?3:c>=20?2:c>=8?1:0;
 const DEF={hz:0,station:'',spirits:{},pSSR:0,pM:0,band:0,bands:[true,false,false],
  up:{hp:0,win:0,hz:0,luck:0,reroll:0,start:0},best:{reach:0,combo:0,hz:0},runs:0,bossWins:0,finale:false,
  dailyDate:'',dailyRuns:0,songs:{},ytTempo:{},lastDiff:1,
- set:{sound:true,haptic:true,shake:true,showTime:true,breaks:true,offset:0}};
+ set:{sound:true,haptic:true,shake:true,showTime:true,breaks:true,offset:0,lanes:3}};
 let S=JSON.parse(JSON.stringify(DEF));
 try{
  const r=localStorage.getItem('spiritbox_v3');
@@ -393,7 +399,7 @@ function ytKill(){try{ytP&&ytP.destroy()}catch(e){}ytP=null;$('ytBox').innerHTML
 /* ================= RUN STATE ================= */
 let R=null,paused=false,lastSong=null;
 function newRun(mode){
- R={mode,depth:1,verse:1,boss:false,bossHP:0,bossMax:0,bossDone:false,hpMax:100+S.up.hp*10,hp:0,win:1+.05*S.up.win,hzMul:(1+.1*S.up.hz),
+ R={mode,nl:S.set.lanes===4?4:3,holds:{},sus:{},depth:1,verse:1,boss:false,bossHP:0,bossMax:0,bossDone:false,hpMax:100+S.up.hp*10,hp:0,win:1+.05*S.up.win,hzMul:(1+.1*S.up.hz),
   comboCap:40,shieldPer:0,shields:0,goldCh:.06,ghostN:1,luck:1,healP:0,dmgMul:1,eye:false,bossDmg:1,echo:0,phoenix:0,
   rerolls:S.up.reroll,cards:{},combo:0,maxCombo:0,hz:0,score:0,caught:[],pending:[],perf:0,good:0,miss:0,
   bpm:0,stepDur:.3,T0:0,nextStep:0,notes:[],countIn:true,verseEnd:0,state:'play',afterBoss:false,lastBonus:0,bossShake:0,lastTier:0,
@@ -417,10 +423,10 @@ function LaneGen(){
  return function(diff){
   if(left<=0){const ms=['rand','stairs','alt','jump','jack','rand'];mode=ms[Math.floor(Math.random()*(diff>.35?6:4))];left=3+Math.floor(Math.random()*5);dir=Math.random()<.5?1:-1}
   left--;
-  if(mode==='rand'){let l;do{l=Math.floor(Math.random()*3)}while(l===lane&&Math.random()<.7);lane=l}
-  else if(mode==='stairs'){lane+=dir;if(lane>2){lane=1;dir=-1}if(lane<0){lane=1;dir=1}}
-  else if(mode==='alt'){lane=lane===0?2:lane===2?0:(Math.random()<.5?0:2)}
-  else if(mode==='jump'){lane=lane===1?(Math.random()<.5?0:2):1}
+  if(mode==='rand'){let l;do{l=Math.floor(Math.random()*NL())}while(l===lane&&Math.random()<.7);lane=l}
+  else if(mode==='stairs'){lane+=dir;const m=NL()-1;if(lane>m){lane=m-1;dir=-1}if(lane<0){lane=1;dir=1}}
+  else if(mode==='alt'){const m=NL()-1;lane=lane===0?m:lane===m?0:(Math.random()<.5?0:m)}
+  else if(mode==='jump'){lane=NL()===3?(lane===1?(Math.random()<.5?0:2):1):(lane+2)%4}
   return lane;
  };
 }
@@ -428,7 +434,7 @@ function mkNote(t,lane,type,diff,p){
  const n={t,lane,type,j:0,sp:1,p:p||0,from:lane};
  if(type==='tap'||type==='phantom'){
   const r=Math.random();
-  if(diff>.12&&r<.05+.14*diff){n.type='sw';n.lane=(lane+1+Math.floor(Math.random()*2))%3}
+  if(diff>.12&&r<.05+.14*diff){n.type='sw';n.lane=(lane+1+Math.floor(Math.random()*(NL()-1)))%NL()}
   else if(diff>.2&&r<.12+.22*diff)n.sp=1.5;
  }
  return n;
@@ -436,7 +442,7 @@ function mkNote(t,lane,type,diff,p){
 function addBombsAndExtras(notes,diff,bombP,dblP){
  // doubles
  const extra=[];
- for(const n of notes){if(n.type==='tap'&&n.strong&&Math.random()<dblP){const l=(n.lane+1+Math.floor(Math.random()*2))%3;extra.push({t:n.t,lane:l,type:'tap',j:0,sp:1,p:n.p+7,from:l})}}
+ for(const n of notes){if(n.type==='tap'&&n.strong&&Math.random()<dblP){const l=(n.lane+1+Math.floor(Math.random()*(NL()-1)))%NL();extra.push({t:n.t,lane:l,type:'tap',j:0,sp:1,p:n.p+7,from:l})}}
  notes.push(...extra);
  notes.sort((a,b)=>a.t-b.t);
  // bombs in gaps
@@ -446,10 +452,10 @@ function addBombsAndExtras(notes,diff,bombP,dblP){
   const a=notes[i],b=notes[i+1];if(!b)break;
   const gap=b.t-a.t;
   if(gap>.45&&Math.random()<bombP){
-   let l;do{l=Math.floor(Math.random()*3)}while(l===b.lane||l===a.lane);
+   let l;do{l=Math.floor(Math.random()*NL())}while(l===b.lane||l===a.lane);
    out.push({t:a.t+gap*(.45+Math.random()*.15),lane:l,type:'bomb',j:0,sp:1,p:0,from:l});
   }else if(gap<.35&&diff>.45&&Math.random()<bombP*.6){
-   const l=[0,1,2].find(x=>x!==a.lane&&x!==b.lane);if(l!==undefined)out.push({t:a.t,lane:l,type:'bomb',j:0,sp:1,p:0,from:l});
+   const l=[...Array(NL()).keys()].find(x=>x!==a.lane&&x!==b.lane);if(l!==undefined)out.push({t:a.t,lane:l,type:'bomb',j:0,sp:1,p:0,from:l});
   }
  }
  out.sort((a,b)=>a.t-b.t);
@@ -458,6 +464,15 @@ function addBombsAndExtras(notes,diff,bombP,dblP){
 function makeGhosts(notes,count){
  const taps=notes.filter(n=>n.type==='tap'&&n.sp===1);
  for(let k=0;k<count&&taps.length;k++){const n=taps.splice(Math.floor(Math.random()*taps.length),1)[0];n.type='ghost'}
+}
+function makeHolds(notes,p){
+ for(let i=0;i<notes.length;i++){
+  const n=notes[i];if(n.type!=='tap'||n.sp!==1||Math.random()>p)continue;
+  let next=Infinity;for(let k=i+1;k<notes.length;k++){if(notes[k].lane===n.lane||notes[k].from===n.lane){next=notes[k].t;break}}
+  const len=Math.min(.45+Math.random()*1.1,next-n.t-.28);if(len<.35)continue;
+  n.type='hold';n.end=n.t+len;
+ }
+ return notes;
 }
 const PAT={
  e:[[1,0,0,0,1,0,0,0],[1,0,1,0,1,0,0,0],[1,0,0,0,1,0,1,0],[1,0,1,0,0,0,1,0],[0,0,1,0,1,0,1,0],[1,0,0,0,0,0,1,0],[1,0,0,1,0,0,1,0]],
@@ -490,7 +505,7 @@ function gridChart(t0,sd,steps,diffAt,startStep){
 /* onset-based chart (audio file) */
 function onsetChart(an,lv,t0){
  const D=DIFFS[lv],lg=LaneGen(),notes=[];let last=-9,pi=4;
- const cand=an.onsets.filter(o=>o.t>2.2&&o.t<an.dur-.5);
+ const cand=an.onsets.filter(o=>o.t>2.2&&o.t<an.dur-.5);cand.forEach(o=>o.keep=0);
  // greedy by strength with min-gap (gap shrinks in boss section)
  const by=[...cand].sort((a,b)=>b.s-a.s),taken=[];
  const ok=(t,gap)=>{for(const x of taken)if(Math.abs(x-t)<gap)return false;return true};
@@ -512,7 +527,7 @@ function startGen(){
 }
 function enterRun(){
  show('run');renderHeld();wrapGlow(0);$('tempoUI').style.display='none';
- $('tapHint').style.visibility=S.runs<4?'visible':'hidden';
+ $('tapHint').style.visibility=S.runs<5?'visible':'hidden';$('tapHint').textContent=NL()===4?'แตะ 4 เลนให้ตรงตอนโน้ตถึงวง · 🩷 มีหาง = กดค้างจนสุด · ห้ามแตะ ✖':'แตะ ซ้าย · กลาง · ขวา ให้ตรงเลน · 🩷 มีหาง = กดค้างจนสุด · ห้ามแตะ ✖';
 }
 function startVerse(){
  const b=BANDS[S.band];
@@ -522,7 +537,7 @@ function startVerse(){
  const diff=Math.min(1,(R.depth-1)*.3+(R.verse-1)*.1+(R.boss?.25:0));
  let notes=gridChart(R.T0,R.stepDur,64,()=>diff,8);
  makeGhosts(notes,R.ghostN);
- R.notes=addBombsAndExtras(notes,diff,(R.boss?.35:.1)+.15*diff,.05+.25*diff);
+ R.notes=makeHolds(addBombsAndExtras(notes,diff,(R.boss?.35:.1)+.15*diff,.05+.25*diff),.07+.1*diff);
  R.verseEnd=R.T0+64*R.stepDur;R.shields=R.shieldPer;R.state='play';
  $('prog').className='pbar'+(R.boss?' boss':'');
  bigPop(R.boss?`${b.boss.e} ${b.boss.n}`:`ชั้น ${R.depth} · ท่อน ${R.verse}/3`,R.boss?'#ff4d73':'#35e6ff');
@@ -540,19 +555,64 @@ function prePicks(n,done){
 }
 function openModes(){
  showOv(`<h2>เลือกคลื่น</h2>
+ <div class="tabs"><button class="chip ${(S.set.lanes||3)===3?'on':''}" data-ln="3"><b>3 เลน</b>มาตรฐาน</button><button class="chip ${S.set.lanes===4?'on':''}" data-ln="4"><b>4 เลน</b>ยากขึ้น · Hz ×1.25</button></div>
+ ${S.set.calibrated?'':'<p class="dim">ครั้งแรก? แนะนำ <a href="#" id="calLink" style="color:var(--cyan)">🎯 ตั้งดีเลย์อัตโนมัติ</a> ก่อน (20 วินาที)</p>'}
  <div class="pick">
   <button class="cardP rR" id="mGen"><span class="e">📻</span><span class="nm">สถานีผี (Roguelite)</span><span class="ds">เพลงที่เกมแต่งสด ลงลึกทีละชั้น เจอบอสทุก 3 ท่อน</span><span class="rr">แตะโดน = คุณเล่นทำนองเอง</span></button>
   <button class="cardP" id="mFile"><span class="e">📁</span><span class="nm">เพลงในเครื่อง</span><span class="ds">เลือกไฟล์ MP3 / M4A / WAV เกมวิเคราะห์จังหวะจริงจากเพลง</span><span class="rr">ไฟล์ไม่ถูกส่งไปไหน วิเคราะห์ในเครื่องคุณ</span></button>
   <button class="cardP" id="mYt"><span class="e">▶️</span><span class="nm">YouTube</span><span class="ds">วางลิงก์ แล้วแตะตามจังหวะเพื่อจับ BPM</span><span class="rr">ต้องใช้อินเทอร์เน็ต · เหมาะกับเพลงที่จังหวะคงที่</span></button>
   ${lastSong?`<button class="cardP rL" id="mLast"><span class="e">🔁</span><span class="nm">เล่นเพลงล่าสุดอีกครั้ง</span><span class="ds">${esc(lastSong.name)}</span><span class="rr">${DIFFS[lastSong.lv].n}</span></button>`:''}
- </div><input type="file" id="fileIn" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac" style="display:none">
+ </div><h4>📚 คลังเพลงในเครื่อง</h4><div id="libList"><p class="dim">กำลังโหลด...</p></div><input type="file" id="fileIn" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac" style="display:none">
  <div class="btnRow"><button class="btn ghost" id="cls">ปิด</button></div>`);
  $('cls').onclick=closeOv;
+ document.querySelectorAll('[data-ln]').forEach(el=>el.onclick=()=>{S.set.lanes=+el.dataset.ln;save();openModes()});
+ {const cl=$('calLink');if(cl)cl.onclick=e=>{e.preventDefault();openCal()}}
+ renderLib();
  $('mGen').onclick=()=>{closeOv();startGen()};
  $('mFile').onclick=()=>{audioInit();$('fileIn').click()};
  $('fileIn').onchange=e=>{const f=e.target.files[0];if(f)loadFile(f)};
  $('mYt').onclick=()=>{audioInit();askYT()};
  if(lastSong)$('mLast').onclick=()=>{audioInit();lastSong.kind==='file'?songFlow(lastSong):ytFlow(lastSong.id,lastSong.lv)};
+}
+function decode(ab){return new Promise((res,rej)=>{const p=AC.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej)})}
+let dbP=null;
+function db(){if(!dbP)dbP=new Promise((res,rej)=>{if(!window.indexedDB)return rej(new Error('noidb'));const r=indexedDB.open('spiritbox',1);r.onupgradeneeded=()=>r.result.createObjectStore('songs',{keyPath:'key'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return dbP}
+async function idb(mode,fn){const d=await db();return new Promise((res,rej)=>{const tx=d.transaction('songs',mode),rq=fn(tx.objectStore('songs'));tx.oncomplete=()=>res(rq&&rq.result);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
+const libPut=r=>idb('readwrite',s=>s.put(r)),libAll=()=>idb('readonly',s=>s.getAll()),libDel=k=>idb('readwrite',s=>s.delete(k));
+async function renderLib(){
+ const el=$('libList');if(!el)return;
+ let list=[];try{list=await libAll()}catch(e){el.innerHTML='<p class="dim">เบราว์เซอร์นี้เก็บเพลงไม่ได้ (เช่น โหมดไม่ระบุตัวตน)</p>';return}
+ if(!$('libList'))return;
+ if(!list.length){el.innerHTML='<p class="dim">เพลงที่คุณเลือกจะถูกเก็บไว้ที่นี่ เปิดมาเล่นต่อได้ทันที (เก็บในเครื่องคุณเท่านั้น)</p>';return}
+ list.sort((a,b)=>(b.last||b.added)-(a.last||a.added));
+ el.innerHTML=list.map((s,i)=>{const bb=Object.entries(S.songs).filter(([k])=>k.startsWith(s.key+':')).map(([,v])=>v).sort((a,b)=>b.score-a.score)[0];
+  return `<div class="libItem"><div class="nm" data-li="${i}">🎵 ${esc(s.name)}<small>${Math.floor(s.an.dur/60)}:${String(Math.floor(s.an.dur%60)).padStart(2,'0')} · ${Math.round(s.an.bpm)} BPM${bb?` · ดีที่สุด ${bb.g} ${fmt(bb.score)}`:' · ยังไม่เคยเล่นจบ'}</small></div><button class="btn ghost" data-ld="${i}">🗑</button></div>`}).join('');
+ el.querySelectorAll('[data-li]').forEach(x=>x.onclick=()=>playLib(list[+x.dataset.li]));
+ el.querySelectorAll('[data-ld]').forEach(x=>x.onclick=async()=>{if(!confirm('ลบเพลงนี้ออกจากคลัง?'))return;await libDel(list[+x.dataset.ld].key).catch(()=>{});renderLib()});
+}
+async function playLib(rec){
+ audioInit();if(!AC)return;
+ showOv(`<h2>🎧 กำลังเตรียมเพลง...</h2><p class="dim">${esc(rec.name)}</p><div class="spin"></div>`);
+ try{
+  const buf=await decode(await rec.blob.arrayBuffer());rec.last=Date.now();libPut(rec).catch(()=>{});
+  chooseDiff(`🎵 ${esc(rec.name)}`,lv=>{lastSong={kind:'file',name:rec.name,buf,an:rec.an,lv,key:rec.key};songFlow(lastSong)});
+ }catch(e){showOv(`<h2>เปิดเพลงนี้ไม่ได้</h2><p class="dim">ไฟล์อาจเสียหาย ลองลบแล้วเพิ่มใหม่</p><div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`);$('cls').onclick=closeOv}
+}
+/* ---- auto latency calibration ---- */
+function openCal(){
+ audioInit();if(!AC)return;if(AC.state==='suspended')AC.resume();
+ const per=.6,N=14,t0=AC.currentTime+1,taps=[];
+ showOv(`<h2>🎯 ตั้งดีเลย์อัตโนมัติ</h2><p>ใช้หูฟังหรือลำโพงแบบเดียวกับตอนเล่นจริง แล้ว<b>แตะปุ่มตามเสียงบี๊บ</b> (หลับตาฟังได้ยิ่งดี)</p><button class="big" id="calTap">👆 แตะตามเสียง</button><p id="calTxt" class="dim">ฟัง 2–3 ครั้งแรกก่อน แล้วค่อยเริ่มแตะ</p>`);
+ for(let i=0;i<N;i++)osc('square',i%4===0?1568:1175,t0+i*per,.06,.09,sfxG);
+ $('calTap').addEventListener('pointerdown',e=>{e.preventDefault();taps.push(AC.currentTime-(AC.outputLatency||0));$('calTxt').textContent=`แตะแล้ว ${taps.length} ครั้ง`});
+ setTimeout(()=>{
+  if(!$('calTap'))return;
+  const d=[];taps.forEach(t=>{const i=Math.round((t-t0)/per);if(i>=2&&i<N){const x=t-(t0+i*per);if(Math.abs(x)<.28)d.push(x)}});
+  if(d.length<5){showOv(`<h2>ข้อมูลไม่พอ</h2><p class="dim">ต้องแตะตามเสียงอย่างน้อย 5 ครั้ง</p><div class="btnRow"><button class="btn ghost" id="cls">ปิด</button><button class="btn gold" id="calAgain">ลองใหม่</button></div>`);$('cls').onclick=closeOv;$('calAgain').onclick=openCal;return}
+  d.sort((a,b)=>a-b);const med=d[Math.floor(d.length/2)],ms=clamp(Math.round(med*200)*5,-300,300),spread=Math.round((d[d.length-1]-d[0])*500);
+  showOv(`<h2>ผลการวัด</h2><p class="mono" style="font-size:32px;color:var(--gold)">${ms>0?'+':''}${ms} ms</p><p class="dim">ค่าเดิม ${S.set.offset} ms · คุณแตะคลาดเคลื่อนประมาณ ±${spread} ms${spread>90?' (ค่อนข้างกระจาย ลองอีกรอบอาจแม่นกว่า)':''}</p><div class="btnRow"><button class="btn ghost" id="calAgain">ลองใหม่</button><button class="btn gold" id="calUse">ใช้ค่านี้</button></div>`);
+  $('calAgain').onclick=openCal;$('calUse').onclick=()=>{S.set.offset=ms;S.set.calibrated=1;save();closeOv()};
+ },(1+N*per+.8)*1000);
 }
 async function loadFile(f){
  audioInit();if(!AC)return alert('เบราว์เซอร์นี้เล่นเสียงไม่ได้');
@@ -563,6 +623,7 @@ async function loadFile(f){
   if(buf.duration<20)throw new Error('short');
   const an=await analyzeBuffer(buf,p=>{const e=$('anP');if(e)e.textContent=Math.round(p*100)+'%'});
   const name=f.name.replace(/\.[^.]+$/,'');
+  libPut({key:'f:'+name+':'+Math.round(buf.duration),name,blob:f,an,added:Date.now()}).catch(()=>{});
   chooseDiff(`🎵 ${esc(name)}`,lv=>{lastSong={kind:'file',name,buf,an,lv,key:'f:'+name+':'+Math.round(buf.duration)};songFlow(lastSong)});
   const p=$('ov').querySelector('.dim');if(p)p.textContent=`พบจังหวะประมาณ ${Math.round(an.bpm)} BPM · ${an.onsets.length} จุดเสียง · ${Math.floor(buf.duration/60)}:${String(Math.floor(buf.duration%60)).padStart(2,'0')} นาที — เลือกความยาก`;
  }catch(e){
@@ -579,7 +640,7 @@ function startFileSong(){
  R.ft=D.ft;R.dur=s.an.dur;R.T0=AC.currentTime+1.2;R.bpm=s.an.bpm;R.stepDur=60/s.an.bpm/2;
  let notes=onsetChart(s.an,s.lv,R.T0);
  makeGhosts(notes,Math.max(1,Math.floor(R.dur/22))+R.ghostN-1);
- R.notes=addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base);
+ R.notes=makeHolds(addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base),.08+.12*D.base);
  R.bossFrom=R.T0+R.dur*.75;
  R.bossMax=Math.max(10,Math.round(R.notes.filter(n=>n.t>=R.bossFrom&&n.type!=='bomb').length*.85));
  const src=AC.createBufferSource();src.buffer=s.buf;src.connect(songG);songG.gain.cancelScheduledValues(AC.currentTime);songG.gain.setValueAtTime(.95,AC.currentTime);src.start(R.T0);R.src=src;
@@ -648,7 +709,7 @@ function startYTSong(c){
  // thin by difficulty min-gap
  const kept=[];for(const n of notes){const lastK=kept[kept.length-1];if(!lastK||n.t-lastK.t>=D.gap*.95)kept.push(n)}
  notes=kept;makeGhosts(notes,Math.max(1,Math.floor(R.dur/22))+R.ghostN-1);
- R.notes=addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base);
+ R.notes=makeHolds(addBombsAndExtras(notes,D.base,.1+.2*D.base,.03+.22*D.base),.08+.12*D.base);
  R.bossFrom=R.dur*.75;R.bossMax=Math.max(10,Math.round(R.notes.filter(n=>n.t>=R.bossFrom&&n.type!=='bomb').length*.85));
  R.shields=R.shieldPer;R.lastShieldT=0;
  ytEnded=false;try{ytP.seekTo(0,true);ytP.playVideo()}catch(e){}
@@ -664,7 +725,7 @@ function schedTick(){
   R.T0+=64*R.stepDur;R.bpm+=3;R.stepDur=60/R.bpm/2;R.countIn=false;R.nextStep=0;
   const diff=Math.min(1,(R.depth-1)*.3+.35);
   let n=gridChart(R.T0,R.stepDur,64,()=>diff,0);makeGhosts(n,R.ghostN);
-  R.notes=R.notes.filter(x=>!x.j).concat(addBombsAndExtras(n,diff,.35+.15*diff,.05+.25*diff));
+  R.notes=R.notes.filter(x=>!x.j||x.j===6).concat(makeHolds(addBombsAndExtras(n,diff,.35+.15*diff,.05+.25*diff),.1));
   R.verseEnd=R.T0+64*R.stepDur;
  }
 }
@@ -696,7 +757,7 @@ function judgeHit(n,perfect){
  R.hp=Math.min(R.hpMax,R.hp+(perfect?.6+R.healP:.2));
  const cm=1+Math.min(R.combo,R.comboCap)*.05,b=BANDS[S.band];
  let hz=2*b.mult*(perfect?1.5:1)*cm*R.hzMul*(setDone(S.band)?1.25:1);
- if(n.type==='gold')hz*=5;
+ if(n.type==='gold')hz*=5;if(R.nl===4)hz*=1.25;
  R.hz+=hz;R.score+=Math.round((perfect?300:120)*(1+Math.min(R.combo,50)*.02)*(n.type==='gold'?2:1));
  hitSound(n,perfect);buzz(perfect?6:4);
  burst(LX(n.lane),HY(),n.type==='gold'||perfect?'255,208,74':'61,255,160',n.type==='gold'?40:perfect?22:12);
@@ -704,7 +765,33 @@ function judgeHit(n,perfect){
  hitFlash[n.lane]=1;
  if(n.type==='ghost')capture(perfect,false);
  if(R.boss){R.bossHP-=(perfect?1.5:1)*R.bossDmg*(n.type==='gold'?3:1);R.bossShake=1}
+ if(n.type==='hold'){n.j=6;R.holds[n.lane]=n;startSus(n)}
  onCombo();
+}
+function startSus(n){
+ if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();
+ o.type='triangle';o.frequency.value=R.mode==='gen'?mtof(n.p):mtof(81+[0,3,7,10][n.lane]);
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(R.mode==='gen'?.05:.022,t+.05);o.connect(g);g.connect(sfxG);o.start(t);R.sus[n.lane]={o,g};
+}
+function stopSus(l){
+ const s=R&&R.sus[l];if(!s||!AC)return;const t=AC.currentTime;
+ try{s.g.gain.cancelScheduledValues(t);s.g.gain.setValueAtTime(s.g.gain.value,t);s.g.gain.linearRampToValueAtTime(0,t+.08);s.o.stop(t+.12)}catch(e){}
+ delete R.sus[l];
+}
+function killSus(){if(R)for(const l in R.sus)stopSus(l)}
+function release(lane){if(!R||R.state!=='play'||paused)return;const n=R.holds[lane];if(!n)return;holdDone(n,clk()>=n.end-.15)}
+function finishHolds(){if(!R)return;for(const l in R.holds)holdDone(R.holds[l],true)}
+function holdDone(n,ok){
+ delete R.holds[n.lane];stopSus(n.lane);
+ if(ok){
+  n.j=1;R.combo++;R.maxCombo=Math.max(R.maxCombo,R.combo);
+  const len=n.end-n.t,b=BANDS[S.band];
+  R.hz+=4*len*b.mult*R.hzMul*(1+Math.min(R.combo,R.comboCap)*.05)*(R.nl===4?1.25:1);
+  R.score+=Math.round(250*len*(1+Math.min(R.combo,50)*.02));R.hp=Math.min(R.hpMax,R.hp+1);
+  burst(LX(n.lane),HY(),'255,122,217',26);pop('HOLD!',LX(n.lane),HY()-70,'#ff7ad9',17);hitFlash[n.lane]=1;
+  if(AC)osc('sine',1568,AC.currentTime,.25,.05,sfxG);
+  onCombo();
+ }else{n.j=5;R.miss++;pop('ปล่อยเร็วไป',LX(n.lane),HY()-70,'#ff8a9e',15);hurt(missDmg()*.5,false)}
 }
 function onCombo(){
  const t=tierOf(R.combo);
@@ -750,6 +837,7 @@ function hurt(d,trap){
  }
 }
 function stopSong(fade){
+ killSus();
  if(R&&R.src&&AC){try{songG.gain.setTargetAtTime(0,AC.currentTime,fade?.25:.02);R.src.stop(AC.currentTime+(fade?1.2:.1))}catch(e){}R.src=null}
  if(R&&R.mode==='yt'&&ytP){try{ytP.pauseVideo()}catch(e){}}
 }
@@ -759,7 +847,7 @@ function die(){
  setTimeout(showResult,1000);
 }
 function endVerse(){
- R.state='inter';
+ finishHolds();R.state='inter';
  if(AC){const t=AC.currentTime;[0,3,7,12].forEach((k,i)=>osc('triangle',mtof(BANDS[S.band].root+12+k),t+i*.08,.6,.06,sfxG))}
  intermission('verse');
 }
@@ -769,9 +857,9 @@ function bossReward(){
  S.bossWins++;capture(true,true);fanfare('M');buzz([30,40,30,40,60]);if(S.set.shake)shake();
  return bonus;
 }
-function bossWin(){R.state='inter';bossReward();R.afterBoss=true;setTimeout(()=>intermission('boss'),700)}
+function bossWin(){finishHolds();R.state='inter';bossReward();R.afterBoss=true;setTimeout(()=>intermission('boss'),700)}
 function songEnd(){
- if(R.state==='over')return;R.state='over';R.cleared=true;
+ if(R.state==='over')return;finishHolds();R.state='over';R.cleared=true;
  R.hz*=1.5;capture(true,true);fanfare('M');
  setTimeout(showResult,900);
 }
@@ -835,13 +923,13 @@ function showResult(){
  }else{
   const g=!R.cleared?'F':acc>=.95?'S':acc>=.88?'A':acc>=.78?'B':acc>=.65?'C':'D';
   const gc={S:'#ffd04a',A:'#3dffa0',B:'#35e6ff',C:'#b48cff',D:'#7d8ca3',F:'#ff4d73'}[g];
-  const key=(R.mode==='file'?R.song.key:'yt:'+R.ytId)+':'+R.lv,old=S.songs[key];
-  const isBest=!old||R.score>old.score;
-  if(isBest)S.songs[key]={score:R.score,g,name:lastSong?lastSong.name:''};
+  const key=(R.mode==='file'?R.song.key:'yt:'+R.ytId)+':'+R.lv+':'+R.nl,old=S.songs[key];
+  const isBest=R.score>0&&(!old||R.score>old.score);
+  if(isBest)S.songs[key]={score:R.score,g,name:lastSong?lastSong.name:'',lv:R.lv,nl:R.nl};
   if(isBest&&old)rec.push(`คะแนนเพลงนี้ (เดิม ${fmt(old.score)})`);
   const prog=R.dur?Math.round(clamp((clk()-R.T0)/R.dur,0,1)*100):0;
   head=`<h2>${R.cleared?'🎉 จบเพลง!':'📻 สัญญาณขาดหาย'}</h2><div class="grade" style="color:${gc}">${g}</div>
-   <p class="mono" style="font-size:22px">${fmt(R.score)}</p><p class="dim">${esc(lastSong?lastSong.name:'')} · ${DIFFS[R.lv].n}${R.cleared?'':` · ไปได้ ${prog}%`}${old&&!isBest?` · สถิติ ${fmt(old.score)} (${old.g})`:''}</p>
+   <p class="mono" style="font-size:22px">${fmt(R.score)}</p><p class="dim">${esc(lastSong?lastSong.name:'')} · ${DIFFS[R.lv].n} · ${R.nl} เลน${R.cleared?'':` · ไปได้ ${prog}%`}${old&&!isBest?` · สถิติ ${fmt(old.score)} (${old.g})`:''}</p>
    <p>คอมโบสูงสุด ${R.maxCombo} · แม่นยำ ${accP}% · <b class="gold">+${fmt(earned)} Hz</b>${bonus?' (โบนัส ×2)':''}</p>`;
  }
  save();
@@ -887,7 +975,7 @@ function wrapGlow(t){const w=$('scopeWrap'),c=TIERC[t];w.style.boxShadow=`0 0 ${
 
 function pause(){
  if(!R||R.state!=='play'||paused)return;
- paused=true;
+ finishHolds();paused=true;
  if(R.mode==='yt'){try{ytP.pauseVideo()}catch(e){}}else if(AC)AC.suspend();
  showOv(`<h2>⏸ หยุดชั่วคราว</h2><p class="dim">Hz ที่ได้ในรอบนี้ ${fmt(R.hz)} ไม่หายไปไหน</p><div class="btnRow"><button class="btn ghost" id="quit">จบรอบ (เก็บ Hz)</button><button class="big" id="res">▶ เล่นต่อ</button></div>`);
  $('res').onclick=resume;
@@ -936,7 +1024,7 @@ function openCodex(band){
       :`<div class="card unk"><div class="e">❔</div><div class="n">???</div><div class="l">${RNAME[sp.r]} · 📼 สัญญาณขาดหาย</div></div>`;
  }
  const songs=Object.values(S.songs);
- if(songs.length)h+=`</div><h4>🎵 สถิติเพลงของคุณ</h4>`+Object.entries(S.songs).slice(-12).map(([k,v])=>`<div class="row"><span>${esc(v.name||'เพลง')} <span class="dim">${DIFFS[+k.split(':').pop()]?.n||''}</span></span><b>${v.g} · ${fmt(v.score)}</b></div>`).join('')+'<div>';
+ if(songs.length)h+=`</div><h4>🎵 สถิติเพลงของคุณ</h4>`+Object.entries(S.songs).slice(-12).map(([k,v])=>`<div class="row"><span>${esc(v.name||'เพลง')} <span class="dim">${v.lv!==undefined?DIFFS[v.lv].n+' · '+(v.nl||3)+' เลน':''}</span></span><b>${v.g} · ${fmt(v.score)}</b></div>`).join('')+'<div>';
  h+=`</div><div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`;
  showOv(h);
  document.querySelectorAll('[data-cb]').forEach(el=>el.onclick=()=>openCodex(+el.dataset.cb));
@@ -965,18 +1053,21 @@ function openInfo(){
   ['Curiosity gap','บันทึกเสียงทีละชิ้นจนเฉลยปริศนาสถานี']
  ];
  let h=`<h2>ℹ️ ข้อมูล</h2>
- <h4>วิธีเล่น</h4><p class="dim" style="text-align:left">แตะ ซ้าย/กลาง/ขวา ของจอให้ตรงเลน (คีย์บอร์ด: A S D หรือ J K L หรือ ← ↓ →) · 🟠 โน้ตส้มตกเร็ว · ↔ โน้ตลูกศรจะเปลี่ยนเลนกลางทาง · 🟣 โน้ตม่วงล่องหนก่อนถึง · ✖ ห้ามแตะ · แตะเลนว่างหรือแตะเร็วไปจะเสียเลือด</p>
+ <h4>วิธีเล่น</h4><p class="dim" style="text-align:left">แตะให้ตรงเลน · 3 เลน: A S D หรือ ← ↓ → · 4 เลน: D F J K หรือ ← ↓ ↑ → · 🩷 โน้ตชมพูมีหาง = กดค้างจนสุดเส้น (ปล่อยเร็วเสียเลือด) · 🟠 โน้ตส้มตกเร็ว · ↔ โน้ตลูกศรจะเปลี่ยนเลนกลางทาง · 🟣 โน้ตม่วงล่องหนก่อนถึง · ✖ ห้ามแตะ · แตะเลนว่างหรือแตะเร็วไปจะเสียเลือด</p>
  <h4>อัตราจับวิญญาณจริง (โน้ต 👻)</h4><table><tr><th></th><th>C</th><th>R</th><th>SSR</th><th>MYTH</th></tr>${row(true)}${row(false)}</table>
  <p class="dim" style="text-align:left">การันตี SSR ทุก 10 ตัว (ตอนนี้ ${S.pSSR}/10) · MYTHIC ทุก 40 ตัว (ตอนนี้ ${S.pM}/40) · ปราบบอส/จบเพลงได้ RARE ขึ้นไปเสมอ · Hz ที่ได้เก็บไว้ทั้งหมดแม้แพ้</p>
  <h4>🧠 หลักจิตวิทยาที่ใช้ (เปิดเผยทั้งหมด)</h4>${P.map(([a,b])=>`<div class="psy"><b>${a}</b><br>${b}</div>`).join('')}
  <h4>สถานีของคุณ</h4><input id="stnIn" class="tin" maxlength="16" value="${esc(S.station)}" placeholder="ตั้งชื่อสถานี">
  <h4>ตั้งค่า</h4>
  ${[['sound','เสียง'],['haptic','สั่น'],['shake','จอสั่น'],['showTime','แสดงเวลาที่เล่นไปแล้ว'],['breaks','ชวนพักทุก 45 นาที (ตอนจบรอบ)']].map(([k,n])=>`<label class="sw"><span>${n}</span><input type="checkbox" data-s="${k}" ${S.set[k]?'checked':''}></label>`).join('')}
- <label class="sw" style="flex-wrap:wrap"><span>ปรับดีเลย์เสียง <b id="offV">${S.set.offset}</b> ms</span><input type="range" min="-200" max="200" step="10" value="${S.set.offset}" id="offIn" style="width:100%"></label>
+ <label class="sw" style="flex-wrap:wrap"><span>ปรับดีเลย์เสียง <b id="offV">${S.set.offset}</b> ms</span><input type="range" min="-300" max="300" step="5" value="${S.set.offset}" id="offIn" style="width:100%"></label>
+ <button class="btn gold" id="calBtn" style="width:100%">🎯 ตั้งดีเลย์อัตโนมัติ (แนะนำ)</button>
  <p class="dim" style="text-align:left">ถ้ากดตรงจังหวะแล้วได้ GOOD หรือ "เร็วไป" บ่อย ให้เลื่อนค่านี้ (หูฟังบลูทูธมักต้องใช้ค่าบวก) · เกมนี้ไม่มีแสงวาบเร็ว</p>
+ <h4>เวอร์ชัน</h4><div class="row"><span>Spirit Box <b class="mono">${GAME_VERSION}</b></span><button class="btn gold" id="updChk">🔄 เช็กอัปเดต</button></div>
  <div class="btnRow"><button class="btn ghost" id="rst">รีเซ็ตเกม</button><button class="btn" id="cls">ปิด</button></div>`;
  showOv(h);
  document.querySelectorAll('[data-s]').forEach(el=>el.onchange=()=>{S.set[el.dataset.s]=el.checked;if(master)master.gain.value=S.set.sound?.9:0;save()});
+ $('calBtn').onclick=openCal;$('updChk').onclick=()=>checkUpdate(true);
  $('offIn').oninput=()=>{S.set.offset=+$('offIn').value;$('offV').textContent=S.set.offset;save()};
  $('stnIn').onchange=()=>{S.station=$('stnIn').value.trim().slice(0,16);save();renderHome()};
  $('rst').onclick=()=>{if(confirm('ลบความคืบหน้าทั้งหมด?')){localStorage.removeItem('spiritbox_v3');localStorage.removeItem('spiritbox_v2');location.reload()}};
@@ -989,8 +1080,11 @@ let Wr=0,Hr=0,Ws=0,Hs=0;
 function fit(cv,ctx){const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);if(!r.width)return[0,0];cv.width=r.width*d;cv.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);return[r.width,r.height]}
 function resizeAll(){[Wr,Hr]=fit(roomC,rx);[Ws,Hs]=fit(scopeC,sx)}
 window.addEventListener('resize',resizeAll);
-const LX=l=>Ws*(.18+.32*l),HY=()=>Hs*.85;
-let particles=[],pops=[],hitFlash=[0,0,0],laneFlash=[0,0,0],missFlash=0,captureGlow='',captureT=0;
+const NL=()=>R?R.nl:(S.set.lanes===4?4:3);
+const lanePad=()=>NL()===4?.13:.18;
+const LX=l=>{const p=lanePad();return Ws*(p+(1-2*p)*l/(NL()-1))},HY=()=>Hs*.85;
+let ptrLane={};
+let particles=[],pops=[],hitFlash=[0,0,0,0],laneFlash=[0,0,0,0],missFlash=0,captureGlow='',captureT=0;
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=40+Math.random()*170;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,c:col,z:1.5+Math.random()*2.5})}}
 function pop(t,x,y,c,s){pops.push({t,x,y,c,s,l:1})}
 function bigPop(t,c){pops.push({t,x:Ws/2,y:Hs*.3,c,s:24,l:1.5,big:1})}
@@ -1043,7 +1137,7 @@ function drawNote(c,n,x,y,frac){
  else if(n.type==='gold'){c.shadowColor='#ffd04a';c.shadowBlur=16;c.fillStyle='#ffd04a';c.beginPath();c.arc(x,y,16,0,6.283);c.fill();c.shadowBlur=0;c.fillStyle='#fff3c4';c.beginPath();c.arc(x,y,6,0,6.283);c.fill()}
  else if(n.type==='ghost'){const g=c.createRadialGradient(x,y,2,x,y,30);g.addColorStop(0,'rgba(180,140,255,.7)');g.addColorStop(1,'rgba(180,140,255,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,30,0,6.283);c.fill();c.font='24px serif';c.textBaseline='middle';c.fillText('👻',x,y);c.textBaseline='alphabetic'}
  else{
-  const col=n.type==='phantom'?'#b48cff':n.type==='sw'?'#3dffa0':n.sp>1?'#ff9d3d':'#35e6ff';
+  const col=n.type==='hold'?'#ff7ad9':n.type==='phantom'?'#b48cff':n.type==='sw'?'#3dffa0':n.sp>1?'#ff9d3d':'#35e6ff';
   c.fillStyle='#04121a';c.strokeStyle=col;c.lineWidth=3;c.beginPath();c.arc(x,y,15,0,6.283);c.fill();c.stroke();
   if(n.type==='sw'){
    const dir=Math.sign(n.lane-n.from);c.fillStyle=col;c.beginPath();c.moveTo(x+dir*8,y);c.lineTo(x-dir*4,y-6);c.lineTo(x-dir*4,y+6);c.closePath();c.fill();
@@ -1063,25 +1157,30 @@ function drawScope(ts,dt){
  if(captureT>0){c.fillStyle=captureGlow;c.globalAlpha=captureT*.12;c.fillRect(0,0,w,h);c.globalAlpha=1;captureT=Math.max(0,captureT-dt*1.2)}
  if(missFlash>0){c.fillStyle='#ff4d73';c.globalAlpha=missFlash*.1;c.fillRect(0,0,w,h);c.globalAlpha=1;missFlash=Math.max(0,missFlash-dt*3)}
  // lanes
- for(let l=0;l<3;l++){
+ for(let l=0;l<NL();l++){
   const x=LX(l);
   const lg=c.createLinearGradient(0,0,0,hy);lg.addColorStop(0,'rgba(53,230,255,0)');lg.addColorStop(1,`rgba(53,230,255,${.07+laneFlash[l]*.18})`);
-  c.fillStyle=lg;c.fillRect(x-Ws*.15,0,Ws*.3,hy+30);
+  c.fillStyle=lg;const lw=Ws*(1-2*lanePad())/(NL()-1)*.92;c.fillRect(x-lw/2,0,lw,hy+30);
   laneFlash[l]=Math.max(0,laneFlash[l]-dt*6);
   c.strokeStyle='rgba(53,230,255,.1)';c.lineWidth=1;c.beginPath();c.moveTo(x,0);c.lineTo(x,hy);c.stroke();
  }
  if(R.boss){const bs=R.bossShake;R.bossShake=Math.max(0,bs-dt*5);c.font='54px serif';c.textBaseline='middle';c.globalAlpha=.85;c.fillText(b.boss.e,w/2+(Math.random()-.5)*bs*10,h*.1+(Math.random()-.5)*bs*6);c.globalAlpha=1;c.textBaseline='alphabetic'}
  // targets
  c.strokeStyle=col;c.shadowColor=col;
- for(let l=0;l<3;l++){c.shadowBlur=10+hitFlash[l]*16;c.lineWidth=3;c.beginPath();c.arc(LX(l),hy,22+3*pulse+hitFlash[l]*6,0,6.283);c.stroke();hitFlash[l]=Math.max(0,hitFlash[l]-dt*5)}
+ for(let l=0;l<NL();l++){c.shadowBlur=10+hitFlash[l]*16;c.lineWidth=3;c.beginPath();c.arc(LX(l),hy,22+3*pulse+hitFlash[l]*6,0,6.283);c.stroke();hitFlash[l]=Math.max(0,hitFlash[l]-dt*5)}
  c.shadowBlur=0;
  // notes
  if(R.state==='play'||R.state==='inter'||R.state==='over'){
   for(const n of R.notes){
-   if(n.j)continue;const d=n.t-now;const ft=R.ft/n.sp;if(d>ft+.1)continue;if(d<-.25)continue;
+   if(n.j&&n.j!==6)continue;const d=n.t-now;const ft=R.ft/n.sp;if(d>ft+.1)continue;
+   if(n.j!==6&&d<-.25)continue;
    if(d>R.ft*1.0+.2&&n.sp===1)break;
-   const y=hy-(d/ft)*hy,frac=clamp((hy-y)/hy,0,1);
-   drawNote(c,n,noteX(n,frac),y,frac);
+   const y=n.j===6?hy:hy-(d/ft)*hy,frac=clamp((hy-y)/hy,0,1),x=noteX(n,frac);
+   if(n.type==='hold'){const ty=Math.max(-20,hy-((n.end-now)/ft)*hy),on=n.j===6;
+    c.fillStyle=on?'rgba(255,122,217,.55)':'rgba(255,122,217,.25)';c.fillRect(x-10,ty,20,y-ty);c.strokeStyle='#ff7ad9';c.lineWidth=2;c.strokeRect(x-10,ty,20,y-ty);
+    c.fillStyle='#ff7ad9';c.beginPath();c.arc(x,ty,10,0,6.283);c.fill();
+    if(on)for(let k=0;k<3;k++)c.fillRect(x-14+Math.random()*28,hy-8-Math.random()*36,2.5,2.5)}
+   drawNote(c,n,x,y,frac);
   }
  }
  for(let i=particles.length-1;i>=0;i--){const q=particles[i];q.l-=dt*1.8;if(q.l<=0){particles.splice(i,1);continue}q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=150*dt;c.fillStyle=`rgba(${q.c},${q.l})`;c.fillRect(q.x,q.y,q.z,q.z)}
@@ -1117,6 +1216,7 @@ function frame(ts){
     if(n.type==='bomb'){n.j=4}
     else{n.j=5;R.miss++;if(n.type==='ghost')pop('วิญญาณหลุดไป...',Ws/2,Hs*.45,'#7d8ca3',14);hurt(missDmg(),false);if(R.state!=='play')break}
    }
+   if(R.state==='play')for(const l in R.holds){const n=R.holds[l];if(n&&now>=n.end)holdDone(n,true)}
    if(R.state==='play'){
     if(R.mode==='gen'){
      if(R.boss){if(R.bossHP<=0)bossWin()}
@@ -1129,7 +1229,7 @@ function frame(ts){
      if(ended&&R.notes.every(n=>n.j||n.t>now+5))songEnd();
     }
    }
-   if(R.notes.length>200)R.notes=R.notes.filter(n=>!n.j||now-n.t<1);
+   if(R.notes.length>200)R.notes=R.notes.filter(n=>!n.j||n.j===6||now-n.t<1);
   }
   drawScope(ts,dt);
   if(ts-hudT>60){hud();hudT=ts}
@@ -1142,20 +1242,52 @@ $('run').addEventListener('pointerdown',e=>{
  if(e.target.closest('button,input,#tempoUI'))return;
  if(!R||R.state!=='play')return;
  e.preventDefault();
- const r=$('run').getBoundingClientRect(),lane=clamp(Math.floor((e.clientX-r.left)/r.width*3),0,2);
- tap(lane);
+ const r=$('run').getBoundingClientRect(),lane=clamp(Math.floor((e.clientX-r.left)/r.width*NL()),0,NL()-1);
+ ptrLane[e.pointerId]=lane;tap(lane);
 });
-const KEYMAP={KeyA:0,KeyS:1,KeyD:2,KeyJ:0,KeyK:1,KeyL:2,ArrowLeft:0,ArrowDown:1,ArrowRight:2};
+const upH=e=>{const l=ptrLane[e.pointerId];if(l===undefined)return;delete ptrLane[e.pointerId];release(l)};
+window.addEventListener('pointerup',upH);window.addEventListener('pointercancel',upH);
+const KEY3={KeyA:0,KeyS:1,KeyD:2,KeyJ:0,KeyK:1,KeyL:2,ArrowLeft:0,ArrowDown:1,ArrowRight:2},KEY4={KeyD:0,KeyF:1,KeyJ:2,KeyK:3,ArrowLeft:0,ArrowDown:1,ArrowUp:2,ArrowRight:3};
+const keyLane=c=>(NL()===4?KEY4:KEY3)[c];
+window.addEventListener('keyup',e=>{const l=keyLane(e.code);if(l!==undefined)release(l)});
 window.addEventListener('keydown',e=>{
  if(e.repeat||e.target.tagName==='INPUT')return;
- if($('run').classList.contains('on')&&!ovOn()&&e.code in KEYMAP){e.preventDefault();tap(KEYMAP[e.code])}
+ const kl=keyLane(e.code);
+ if($('run').classList.contains('on')&&!ovOn()&&kl!==undefined){e.preventDefault();tap(kl)}
  if(e.code==='Escape')pause();
 });
 setInterval(()=>{const m=Math.floor((Date.now()-sessStart)/60000);$('sess').textContent=S.set.showTime?`เล่นมาแล้ว ${m} นาที`:''},5000);
 
+/* ================= UPDATE CHECK ================= */
+let updVer=null;
+async function checkUpdate(manual){
+ const base=location.href.split('#')[0].split('?')[0];
+ if(location.protocol==='file:'){if(manual)showOv(`<h2>🔄 อัปเดต</h2><p class="dim">ต้องเปิดเกมจากเว็บ (GitHub Pages) ถึงจะเช็กอัปเดตได้</p><p class="dim">เวอร์ชันนี้: ${GAME_VERSION}</p><div class="btnRow"><button class="btn" id="cls">ปิด</button></div>`),$('cls').onclick=closeOv;return}
+ if(manual)showOv(`<h2>🔄 กำลังเช็กอัปเดต...</h2><div class="spin"></div>`);
+ try{
+  const r=await fetch(base+'?check='+Date.now(),{cache:'no-store'});const txt=await r.text();
+  const m=txt.match(/GAME_VERSION='([^']+)'/),remote=m?m[1]:null;
+  if(remote&&remote!==GAME_VERSION){
+   updVer=remote;const b=$('updBtn');b.style.display='block';b.textContent=`🔄 มีเวอร์ชันใหม่ ${remote} · แตะเพื่ออัปเดต`;
+   if(manual)showOv(`<h2>🔄 มีเวอร์ชันใหม่!</h2><p>${GAME_VERSION} → <b class="gold">${remote}</b></p><p class="dim">ความคืบหน้า วิญญาณ และคลังเพลงอยู่ครบ</p><div class="btnRow"><button class="btn ghost" id="cls">ไว้ทีหลัง</button><button class="big" id="doUpd">อัปเดตเลย</button></div>`),$('cls').onclick=closeOv,$('doUpd').onclick=doUpdate;
+  }else if(manual){
+   showOv(`<h2>✅ ล่าสุดแล้ว</h2><p class="dim">เวอร์ชัน ${GAME_VERSION}</p><p class="dim">ถ้าเพิ่งอัปโหลดไฟล์ใหม่ GitHub อาจใช้เวลา 1–10 นาทีกว่าจะเห็น หรือกดโหลดใหม่แบบบังคับได้</p><div class="btnRow"><button class="btn ghost" id="force">โหลดใหม่แบบบังคับ</button><button class="btn" id="cls">ปิด</button></div>`);$('cls').onclick=closeOv;$('force').onclick=doUpdate;
+  }
+ }catch(e){if(manual){showOv(`<h2>เช็กอัปเดตไม่ได้</h2><p class="dim">อาจไม่มีอินเทอร์เน็ต</p><div class="btnRow"><button class="btn ghost" id="force">โหลดใหม่แบบบังคับ</button><button class="btn" id="cls">ปิด</button></div>`);$('cls').onclick=closeOv;$('force').onclick=doUpdate}}
+}
+async function doUpdate(){
+ save();
+ try{if('caches' in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}
+ location.replace(location.href.split('#')[0].split('?')[0]+'?v='+Date.now());
+}
+$('updBtn').onclick=doUpdate;
+setInterval(()=>{if($('home').classList.contains('on')&&!updVer)checkUpdate(false)},10*60*1000);
+
 /* ================= BOOT ================= */
 function boot(){
  dailyCheck();resizeAll();renderHome();requestAnimationFrame(frame);
+ setTimeout(()=>checkUpdate(false),1500);
+ if(/[?&]v=\d/.test(location.search))history.replaceState(null,'',location.pathname);
  if(!S.station&&!S.runs){
   if(!owned())S.spirits[1]=1;
   showOv(`<h2>📻 เปิดสถานีของคุณ</h2><p>ตั้งชื่อสถานีวิทยุของคุณ</p><input id="stnFirst" class="tin" maxlength="16" placeholder="เช่น คลื่นตีสาม"><p class="gold">🎁 ของขวัญแรก: 📻 เสียงกระซิบข้างเสาไฟ</p><p class="dim">เปิดเสียงด้วยนะ เกมนี้เล่นตามจังหวะเพลง 🎧</p><div class="btnRow"><button class="big" id="go">เปิดสถานี</button></div>`);
